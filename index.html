@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!-- ============ SEO ============ -->
+<title>Rhythm Void — Free Browser Rhythm Arcade Game</title>
+<meta name="description" content="Rhythm Void is a free browser rhythm arcade game. Tap glowing rings, fight bosses, capture their cores, unlock hidden realms, and chase your weekly best. No download, no account.">
+<meta name="theme-color" content="#05060F">
+
+<!-- ===================================================================
+     RHYTHM VOID — URL REFERENCE
+
+     1. LANDING PAGE URL (live)
+        https://www.playrhythmvoid.com/
+        Used by canonical and og:url. The www host is the canonical one, so
+        make sure the root domain 301-redirects to it at your DNS/host level
+        (playrhythmvoid.com -> www.playrhythmvoid.com). Serving the same page
+        on both hosts without a redirect splits your SEO signals.
+
+     2. SOCIAL CARD IMAGE
+        https://www.playrhythmvoid.com/social-card.png
+        A 1200x630 PNG at the site root. Must stay an absolute URL on the
+        canonical host — relative paths do not work for social scrapers.
+
+     3. GAME URL — set on every Play Free button:
+        https://dhayes96.github.io/Neon-Orbit-Playtest/
+
+        TODO: Update GAME_URL once the Rhythm Void game repo or custom domain
+        is live. The old Neon-Orbit-Playtest URL is intentionally kept for now
+        so the Play Free buttons do not break. When the new URL exists, find
+        and replace that string — it appears on 7 links in this file.
+     =================================================================== -->
+
+<link rel="canonical" href="https://www.playrhythmvoid.com/">
+
+<!-- ============ OPEN GRAPH / SOCIAL ============ -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Rhythm Void">
+<meta property="og:title" content="Rhythm Void — every tap keeps you alive">
+<meta property="og:description" content="Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best. Play free in your browser.">
+<meta property="og:url" content="https://www.playrhythmvoid.com/">
+<meta property="og:image" content="https://www.playrhythmvoid.com/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Rhythm Void — glowing cyan and magenta rhythm rings on a dark void background">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Rhythm Void — every tap keeps you alive">
+<meta name="twitter:description" content="Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best. Play free in your browser.">
+<meta name="twitter:image" content="https://www.playrhythmvoid.com/social-card.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ===================================================================
+   TOKENS
+   =================================================================== */
+:root{
+  --void:#05060f;
+  --deep:#0a0d20;
+  --panel:#0d1129;
+  --line:rgba(140,170,255,.16);
+  --cyan:#22e9ff;
+  --magenta:#ff2fb9;
+  --violet:#8b5cff;
+  --hot:#eafcff;
+  --text:#cdd6f4;
+  --dim:#8b95bd;
+
+  --display:"Chakra Petch",'Segoe UI',system-ui,sans-serif;
+  --body:"Space Grotesk",system-ui,-apple-system,sans-serif;
+
+  --pad:clamp(20px,5vw,40px);
+  --gap:clamp(16px,3vw,24px);
+  --sec:clamp(64px,11vw,120px);
+  --r:14px;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--void);
+  color:var(--text);
+  font-family:var(--body);
+  font-size:clamp(15px,1.6vw,17px);
+  line-height:1.65;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ambient field — gradients only, no filters, cheap to paint */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  background:
+    radial-gradient(60% 45% at 78% 8%, rgba(255,47,185,.16), transparent 65%),
+    radial-gradient(70% 55% at 12% 22%, rgba(34,233,255,.14), transparent 65%),
+    radial-gradient(90% 70% at 50% 108%, rgba(139,92,255,.20), transparent 70%),
+    linear-gradient(180deg,#05060f 0%,#070a1a 45%,#05060f 100%);
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  opacity:.35;
+  background-image:
+    linear-gradient(rgba(140,170,255,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(140,170,255,.05) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(80% 60% at 50% 0%,#000 20%,transparent 85%);
+  -webkit-mask-image:radial-gradient(80% 60% at 50% 0%,#000 20%,transparent 85%);
+}
+
+img{max-width:100%;display:block}
+a{color:var(--cyan)}
+
+:focus-visible{
+  outline:2px solid var(--cyan);
+  outline-offset:3px;
+  border-radius:4px;
+}
+
+.skip{
+  position:absolute;left:-9999px;top:0;z-index:100;
+  background:var(--cyan);color:#04121a;padding:10px 16px;font-family:var(--display);
+}
+.skip:focus{left:12px;top:12px}
+
+/* ===================================================================
+   LAYOUT PRIMITIVES
+   =================================================================== */
+.wrap{width:100%;max-width:1140px;margin-inline:auto;padding-inline:var(--pad)}
+.band{padding-block:var(--sec)}
+.band--tight{padding-block:calc(var(--sec) * .62)}
+
+.eyebrow{
+  font-family:var(--display);
+  font-size:.72rem;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:var(--cyan);
+  margin:0 0 14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.eyebrow::after{
+  content:"";
+  flex:1;
+  height:1px;
+  background:linear-gradient(90deg,rgba(34,233,255,.5),transparent);
+}
+
+h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.02;margin:0;letter-spacing:.01em}
+h2{font-size:clamp(1.85rem,5.4vw,3rem);text-transform:uppercase}
+h3{font-size:1.06rem;letter-spacing:.05em;text-transform:uppercase}
+
+.lede{max-width:62ch;color:var(--dim);margin:18px 0 0;font-size:1.02em}
+
+/* ===================================================================
+   BUTTONS
+   =================================================================== */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  font-family:var(--display);
+  font-weight:700;
+  font-size:1rem;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  text-decoration:none;
+  padding:16px 30px;
+  border-radius:var(--r);
+  border:1px solid transparent;
+  cursor:pointer;
+  transition:transform .18s ease,box-shadow .25s ease,background .25s ease;
+  min-height:54px;
+}
+.btn--play{
+  color:#03121a;
+  background:linear-gradient(120deg,var(--cyan),#7df6ff 45%,var(--magenta));
+  box-shadow:0 0 0 1px rgba(255,255,255,.18) inset,0 10px 40px -12px rgba(34,233,255,.85);
+}
+.btn--play:hover,.btn--play:focus-visible{
+  transform:translateY(-2px);
+  box-shadow:0 0 0 1px rgba(255,255,255,.3) inset,0 16px 52px -10px rgba(255,47,185,.75);
+}
+.btn--ghost{
+  color:var(--text);
+  border-color:var(--line);
+  background:rgba(13,17,41,.6);
+}
+.btn--ghost:hover,.btn--ghost:focus-visible{
+  border-color:var(--violet);
+  color:#fff;
+  transform:translateY(-2px);
+}
+
+/* ===================================================================
+   HERO
+   =================================================================== */
+.hero{
+  position:relative;
+  padding-block:clamp(48px,9vw,96px) clamp(56px,9vw,104px);
+}
+.hero__grid{
+  display:grid;
+  gap:clamp(32px,6vw,56px);
+  align-items:center;
+}
+.hero__tag{
+  font-family:var(--display);
+  font-size:.7rem;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  color:var(--dim);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:7px 15px;
+  display:inline-block;
+  margin-bottom:22px;
+}
+.hero h1{
+  font-size:clamp(3.1rem,15vw,7.2rem);
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  background:linear-gradient(100deg,var(--hot) 0%,var(--cyan) 38%,var(--magenta) 82%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  filter:drop-shadow(0 0 26px rgba(34,233,255,.35));
+}
+.hero__sub{
+  font-family:var(--display);
+  font-size:clamp(1.02rem,2.6vw,1.3rem);
+  color:#fff;
+  margin:20px 0 0;
+  max-width:34ch;
+  line-height:1.4;
+}
+.hero__copy{max-width:52ch;color:var(--dim);margin:14px 0 0}
+.hero__actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}
+.hero__note{
+  margin:18px 0 0;
+  font-size:.86rem;
+  color:var(--dim);
+  letter-spacing:.02em;
+}
+.hero__note b{color:var(--cyan);font-weight:500}
+
+/* signature: live pulse demo */
+.demo{
+  justify-self:center;
+  width:min(100%,380px);
+  text-align:center;
+}
+.demo__stage{
+  position:relative;
+  aspect-ratio:1;
+  border-radius:50%;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  background:radial-gradient(circle at 50% 50%,rgba(139,92,255,.16),transparent 62%);
+}
+.demo__stage canvas{width:100%;height:100%;display:block}
+.demo__verdict{
+  position:absolute;
+  inset:auto 0 50%;
+  transform:translateY(50%);
+  font-family:var(--display);
+  font-size:1.5rem;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  pointer-events:none;
+  opacity:0;
+  color:var(--hot);
+}
+.demo__verdict.show{animation:pop .62s ease-out}
+@keyframes pop{
+  0%{opacity:0;transform:translateY(50%) scale(.7)}
+  22%{opacity:1;transform:translateY(50%) scale(1.06)}
+  100%{opacity:0;transform:translateY(50%) scale(1.14)}
+}
+.demo__hint{
+  font-family:var(--display);
+  font-size:.7rem;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:var(--dim);
+  margin:14px 0 0;
+}
+.demo__hint strong{color:var(--magenta);font-weight:600}
+
+@media (min-width:900px){
+  .hero__grid{grid-template-columns:1.05fr .95fr}
+  .demo{width:min(100%,420px)}
+}
+
+/* ===================================================================
+   CARDS
+   =================================================================== */
+.cards{
+  display:grid;
+  gap:var(--gap);
+  margin-top:clamp(30px,5vw,48px);
+  grid-template-columns:1fr;
+}
+@media (min-width:620px){.cards{grid-template-columns:1fr 1fr}}
+@media (min-width:1000px){.cards--4{grid-template-columns:repeat(4,1fr)}}
+
+.card{
+  position:relative;
+  background:linear-gradient(160deg,rgba(13,17,41,.92),rgba(7,10,26,.92));
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  padding:26px 22px 28px;
+  overflow:hidden;
+  transition:transform .22s ease,border-color .22s ease;
+}
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:2px;
+  background:var(--accent,var(--cyan));
+  opacity:.8;
+}
+.card:hover{transform:translateY(-4px);border-color:rgba(140,170,255,.34)}
+.card h3{color:#fff;margin-bottom:12px}
+.card p{margin:0;color:var(--dim);font-size:.95rem}
+.card__mark{
+  width:34px;height:34px;margin-bottom:18px;
+  color:var(--accent,var(--cyan));
+}
+.card__mark svg{width:100%;height:100%;display:block}
+
+/* ===================================================================
+   BOSSES
+   =================================================================== */
+.bosses{
+  display:grid;
+  gap:var(--gap);
+  margin-top:clamp(30px,5vw,48px);
+  grid-template-columns:1fr;
+}
+@media (min-width:680px){.bosses{grid-template-columns:1fr 1fr}}
+
+.boss{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  padding:20px;
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  background:linear-gradient(110deg,rgba(13,17,41,.9),rgba(5,6,15,.9));
+  transition:border-color .22s ease,transform .22s ease;
+}
+.boss:hover{transform:translateX(4px);border-color:var(--accent)}
+.boss__glyph{
+  flex:0 0 auto;
+  width:52px;height:52px;
+  color:var(--accent);
+  filter:drop-shadow(0 0 12px currentColor);
+}
+.boss__glyph svg{width:100%;height:100%;display:block}
+.boss__name{
+  font-family:var(--display);
+  font-size:1.12rem;
+  letter-spacing:.09em;
+  color:#fff;
+  text-transform:uppercase;
+  line-height:1.2;
+}
+.boss__core{
+  font-family:var(--display);
+  font-size:.72rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-top:7px;
+}
+.boss__note{font-size:.84rem;color:var(--dim);margin:6px 0 0}
+
+/* ===================================================================
+   SECRET REALMS
+   =================================================================== */
+.realms{
+  display:grid;
+  gap:var(--gap);
+  margin-top:clamp(30px,5vw,48px);
+  grid-template-columns:1fr;
+}
+@media (min-width:620px){.realms{grid-template-columns:repeat(3,1fr)}}
+
+.realm{
+  position:relative;
+  border:1px dashed rgba(139,92,255,.42);
+  border-radius:var(--r);
+  padding:30px 22px;
+  text-align:center;
+  background:rgba(10,13,32,.55);
+  overflow:hidden;
+}
+.realm__lock{
+  font-family:var(--display);
+  font-size:2.1rem;
+  letter-spacing:.18em;
+  color:var(--violet);
+  text-shadow:0 0 22px rgba(139,92,255,.8);
+}
+.realm__label{
+  font-family:var(--display);
+  font-size:.72rem;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--dim);
+  margin-top:12px;
+}
+.realm__blur{
+  margin:10px 0 0;
+  font-size:.9rem;
+  color:var(--dim);
+  filter:blur(4px);
+  user-select:none;
+}
+
+/* ===================================================================
+   HOW TO PLAY — a real ordered sequence, so numbers carry meaning
+   =================================================================== */
+.steps{
+  list-style:none;
+  counter-reset:step;
+  margin:clamp(30px,5vw,48px) 0 0;
+  padding:0;
+  display:grid;
+  gap:2px;
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  overflow:hidden;
+  background:var(--line);
+}
+.steps li{
+  counter-increment:step;
+  display:flex;
+  gap:18px;
+  align-items:baseline;
+  padding:20px 22px;
+  background:rgba(9,12,29,.94);
+}
+.steps li::before{
+  content:counter(step,decimal-leading-zero);
+  font-family:var(--display);
+  font-size:.92rem;
+  letter-spacing:.1em;
+  color:var(--magenta);
+  flex:0 0 auto;
+}
+.steps li b{color:#fff;font-weight:500}
+kbd{
+  font-family:var(--display);
+  font-size:.78em;
+  border:1px solid var(--line);
+  border-bottom-width:2px;
+  border-radius:5px;
+  padding:2px 7px;
+  color:var(--cyan);
+  background:rgba(34,233,255,.07);
+}
+
+/* ===================================================================
+   CONTROLS NOTE
+   =================================================================== */
+.controls{
+  display:grid;
+  gap:var(--gap);
+  margin-top:var(--gap);
+  grid-template-columns:1fr;
+}
+@media (min-width:680px){.controls{grid-template-columns:1fr 1fr}}
+
+.ctrl{
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  padding:22px;
+  background:rgba(9,12,29,.7);
+}
+.ctrl h3{
+  color:#fff;
+  display:flex;
+  align-items:center;
+  gap:11px;
+  margin-bottom:16px;
+}
+.ctrl h3 svg{width:19px;height:19px;color:var(--accent,var(--cyan));flex:0 0 auto}
+.ctrl dl{margin:0;display:grid;gap:11px}
+.ctrl div{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.ctrl dt{
+  font-family:var(--display);
+  font-size:.7rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent,var(--cyan));
+  flex:0 0 auto;
+  min-width:78px;
+}
+.ctrl dd{margin:0;font-size:.92rem;color:var(--dim);flex:1 1 150px}
+
+/* ===================================================================
+   SHOTS
+   =================================================================== */
+.shots{
+  display:grid;
+  gap:var(--gap);
+  margin-top:clamp(30px,5vw,48px);
+  grid-template-columns:1fr;
+}
+@media (min-width:620px){.shots{grid-template-columns:repeat(3,1fr)}}
+
+.shot{margin:0}
+.shot__frame{
+  position:relative;
+  aspect-ratio:16/10;
+  border:1px dashed rgba(140,170,255,.3);
+  border-radius:var(--r);
+  background:
+    radial-gradient(circle at 50% 42%,rgba(34,233,255,.14),transparent 62%),
+    repeating-linear-gradient(135deg,rgba(140,170,255,.045) 0 12px,transparent 12px 24px),
+    var(--deep);
+  display:grid;
+  place-content:center;
+  justify-items:center;
+  text-align:center;
+  gap:8px;
+  padding:18px;
+  overflow:hidden;
+}
+.shot__slot{
+  font-family:var(--display);
+  font-size:1.6rem;
+  letter-spacing:.1em;
+  color:var(--cyan);
+  line-height:1;
+  text-shadow:0 0 18px rgba(34,233,255,.6);
+}
+.shot__what{
+  font-family:var(--display);
+  font-size:.8rem;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:rgba(205,214,244,.82);
+}
+.shot__spec{
+  font-size:.72rem;
+  letter-spacing:.06em;
+  color:var(--dim);
+  font-family:var(--display);
+}
+.shot__frame img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.shot figcaption{
+  font-size:.82rem;
+  color:var(--dim);
+  margin-top:12px;
+  padding-inline:2px;
+}
+
+/* ===================================================================
+   CTA BAND
+   =================================================================== */
+.cta{
+  border:1px solid var(--line);
+  border-radius:calc(var(--r) + 6px);
+  padding:clamp(34px,6vw,56px) var(--pad);
+  text-align:center;
+  background:
+    radial-gradient(70% 120% at 50% 0%,rgba(255,47,185,.18),transparent 70%),
+    radial-gradient(70% 120% at 50% 100%,rgba(34,233,255,.16),transparent 70%),
+    rgba(8,11,26,.85);
+}
+.cta h2{font-size:clamp(1.7rem,5vw,2.6rem)}
+.cta p{color:var(--dim);max-width:48ch;margin:16px auto 0}
+.cta .btn{margin-top:28px}
+
+/* ===================================================================
+   CONTACT + FOOTER
+   =================================================================== */
+.contact{
+  display:grid;
+  gap:var(--gap);
+  margin-top:clamp(26px,4vw,40px);
+  grid-template-columns:1fr;
+}
+@media (min-width:680px){.contact{grid-template-columns:1fr 1fr}}
+.contact a.card{text-decoration:none;display:block}
+.contact a.card p{margin-top:10px}
+
+footer{
+  border-top:1px solid var(--line);
+  padding-block:38px calc(38px + env(safe-area-inset-bottom));
+  margin-top:var(--sec);
+}
+.foot{
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+  align-items:center;
+  justify-content:space-between;
+}
+.foot__mark{
+  font-family:var(--display);
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:#fff;
+  font-size:.95rem;
+}
+.foot nav{display:flex;flex-wrap:wrap;gap:20px}
+.foot nav a{
+  color:var(--dim);
+  text-decoration:none;
+  font-size:.86rem;
+  letter-spacing:.06em;
+}
+.foot nav a:hover{color:var(--cyan)}
+.foot__fine{
+  color:var(--dim);
+  font-size:.78rem;
+  margin:22px 0 0;
+  opacity:.72;
+}
+
+/* ===================================================================
+   STICKY MOBILE CTA
+   =================================================================== */
+.dock{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:40;
+  padding:12px var(--pad) calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(5,6,15,0),rgba(5,6,15,.94) 32%);
+  transform:translateY(120%);
+  transition:transform .3s ease;
+  pointer-events:none;
+}
+.dock.on{transform:translateY(0);pointer-events:auto}
+.dock .btn{width:100%}
+@media (min-width:900px){.dock{display:none}}
+
+/* ===================================================================
+   REVEAL + MOTION PREFERENCES
+   Content is visible by default and never depends on JavaScript.
+   =================================================================== */
+.rise{
+  opacity:1;
+  transform:none;
+  transition:none;
+}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important}
+}
+</style>
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<main id="main">
+
+  <!-- ============================ 1. HERO ============================ -->
+  <header class="hero">
+    <div class="wrap hero__grid">
+      <div>
+        <p class="hero__tag">Browser arcade · Free to play</p>
+        <h1>Rhythm<br>Void</h1>
+        <p class="hero__sub">A rhythm arcade game where every tap keeps you alive.</p>
+        <p class="hero__copy">Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best.</p>
+
+        <!-- ==================== 2. PLAY FREE CTA ==================== -->
+        <div class="hero__actions">
+          <a class="btn btn--play" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+          <a class="btn btn--ghost" href="#how-to-play">How to play</a>
+        </div>
+        <p class="hero__note"><b>No download. No account.</b> Play instantly in your browser.</p>
+      </div>
+
+      <!-- signature element: a live, tappable ring — the core mechanic itself -->
+      <div class="demo">
+        <div class="demo__stage" id="stage" role="button" tabindex="0" aria-label="Practice ring. Tap or press Enter when the ring meets the target.">
+          <canvas id="pulse" aria-hidden="true"></canvas>
+          <p class="demo__verdict" id="verdict" aria-live="polite"></p>
+        </div>
+        <p class="demo__hint">Try it — tap when the ring hits the <strong>target</strong></p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================= 3. FEATURES ========================= -->
+  <section class="band band--tight" aria-labelledby="features-h">
+    <div class="wrap">
+      <p class="eyebrow">What you're getting into</p>
+      <h2 id="features-h">Built around one perfect tap</h2>
+      <div class="cards cards--4">
+
+        <article class="card rise" style="--accent:var(--cyan)">
+          <div class="card__mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="20" cy="20" r="17"/><circle cx="20" cy="20" r="8" stroke-dasharray="3 4"/><circle cx="20" cy="3" r="2.5" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <h3>Perfect timing</h3>
+          <p>Tap shrinking glowing rings at the perfect moment to build combo, restore energy, and push deeper into the void.</p>
+        </article>
+
+        <article class="card rise" style="--accent:var(--magenta)">
+          <div class="card__mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 4 33 12v16L20 36 7 28V12z"/><circle cx="20" cy="20" r="5" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <h3>Boss core abilities</h3>
+          <p>Defeat bosses and capture their cores to unlock powers like Hex Saw, Tri-Laser, Prism Guard, and Eclipse Realm.</p>
+        </article>
+
+        <article class="card rise" style="--accent:var(--violet)">
+          <div class="card__mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 3 37 20 20 37 3 20z" stroke-dasharray="5 5"/><path d="M20 12v16M12 20h16"/>
+            </svg>
+          </div>
+          <h3>Secret realms</h3>
+          <p>Discover hidden modes with unique music, new bosses, and completely different energy.</p>
+        </article>
+
+        <article class="card rise" style="--accent:var(--hot)">
+          <div class="card__mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 34V22M20 34V8M34 34V16"/><circle cx="20" cy="8" r="3" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <h3>Weekly leaderboard</h3>
+          <p>Track your weekly best, share your run, and challenge friends to beat your score.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================== 4. BOSSES ========================== -->
+  <section class="band" id="bosses" aria-labelledby="boss-h">
+    <div class="wrap">
+      <p class="eyebrow">Boss cores</p>
+      <h2 id="boss-h">Boss fights change the run</h2>
+      <p class="lede">Every major boss has its own arena, music, attack rhythm, and unlockable power. Learn the patterns, survive the pressure, and turn their core into your weapon.</p>
+
+      <div class="bosses">
+
+        <article class="boss rise" style="--accent:var(--cyan)">
+          <div class="boss__glyph" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M24 5 40 14v20L24 43 8 34V14z"/><path d="M24 15 33 20v10l-9 5-9-5V20z" stroke-dasharray="4 3"/>
+            </svg>
+          </div>
+          <div>
+            <p class="boss__name">Hexatron</p>
+            <p class="boss__core">Core → Hex Saw</p>
+            <p class="boss__note">Capture the core to equip Hex Saw.</p>
+          </div>
+        </article>
+
+        <article class="boss rise" style="--accent:var(--magenta)">
+          <div class="boss__glyph" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M24 5 43 40H5z"/><path d="M24 18 34 35H14z" stroke-dasharray="4 3"/>
+            </svg>
+          </div>
+          <div>
+            <p class="boss__name">Triarch</p>
+            <p class="boss__core">Core → Tri-Laser</p>
+            <p class="boss__note">Capture the core to equip Tri-Laser.</p>
+          </div>
+        </article>
+
+        <article class="boss rise" style="--accent:var(--violet)">
+          <div class="boss__glyph" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M24 4 44 24 24 44 4 24z"/><path d="M24 4v40M4 24h40" stroke-dasharray="3 4"/>
+            </svg>
+          </div>
+          <div>
+            <p class="boss__name">Vanta Prism</p>
+            <p class="boss__core">Core → Prism Guard</p>
+            <p class="boss__note">Capture the core to equip Prism Guard.</p>
+          </div>
+        </article>
+
+        <article class="boss rise" style="--accent:var(--hot)">
+          <div class="boss__glyph" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="24" cy="24" r="19"/><circle cx="30" cy="21" r="15" fill="#05060f" stroke="none"/><circle cx="30" cy="21" r="15" stroke-dasharray="4 5"/>
+            </svg>
+          </div>
+          <div>
+            <p class="boss__name">Eclipse Sovereign</p>
+            <p class="boss__core">Core → Eclipse Realm</p>
+            <p class="boss__note">Capture the core to equip Eclipse Realm.</p>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 5. SECRET REALMS ======================= -->
+  <section class="band band--tight" aria-labelledby="realms-h">
+    <div class="wrap">
+      <p class="eyebrow">Classified</p>
+      <h2 id="realms-h">Hidden realms are waiting</h2>
+      <p class="lede">Rhythm Void has more than one rhythm. Find the hidden paths, enter secret realms, and face bosses that don't play by the normal rules.</p>
+
+      <div class="realms">
+        <div class="realm rise">
+          <p class="realm__lock" aria-hidden="true">???</p>
+          <p class="realm__label">Realm — undiscovered</p>
+          <p class="realm__blur" aria-hidden="true">Entry condition unknown</p>
+        </div>
+        <div class="realm rise">
+          <p class="realm__lock" aria-hidden="true">???</p>
+          <p class="realm__label">Realm — undiscovered</p>
+          <p class="realm__blur" aria-hidden="true">Soundtrack unrecognised</p>
+        </div>
+        <div class="realm rise">
+          <p class="realm__lock" aria-hidden="true">???</p>
+          <p class="realm__label">Realm — undiscovered</p>
+          <p class="realm__blur" aria-hidden="true">Boss signature not on file</p>
+        </div>
+      </div>
+      <p class="lede" style="margin-top:22px">No hints here. Play far enough and you'll know when you've found one.</p>
+    </div>
+  </section>
+
+  <!-- ======================== 6. LEADERBOARD ======================== -->
+  <section class="band band--tight" aria-labelledby="board-h">
+    <div class="wrap">
+      <p class="eyebrow">Weekly reset</p>
+      <h2 id="board-h">Chase your weekly best</h2>
+      <p class="lede">Every run gives you a score, stage, accuracy, bosses defeated, and shareable result. Send it to a friend and see who survives longer.</p>
+
+      <div class="cards">
+        <article class="card rise" style="--accent:var(--cyan)">
+          <h3>Your run, measured</h3>
+          <p>Score, stage reached, accuracy, and bosses defeated — recorded at the end of every attempt.</p>
+        </article>
+        <article class="card rise" style="--accent:var(--magenta)">
+          <h3>Share the challenge</h3>
+          <p>Copy your result and send it to a friend. Whoever survives longer takes the week.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== 7. HOW TO PLAY ======================== -->
+  <section class="band" id="how-to-play" aria-labelledby="how-h">
+    <div class="wrap">
+      <p class="eyebrow">Controls</p>
+      <h2 id="how-h">How to play</h2>
+      <p class="lede">Five things to know. You'll have them down inside one run.</p>
+
+      <ol class="steps">
+        <li><span><b>Tap when the ring reaches the target.</b></span></li>
+        <li><span>Perfect hits <b>restore energy</b> and build combo.</span></li>
+        <li><span>Misses <b>drain energy</b>.</span></li>
+        <li><span>Hold the target or <kbd>Spacebar</kbd> to activate your equipped <b>Boss Core ability</b>.</span></li>
+        <li><span><b>Survive as long as you can.</b></span></li>
+      </ol>
+
+      <div class="controls">
+        <div class="ctrl" style="--accent:var(--cyan)">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/>
+            </svg>
+            On mobile
+          </h3>
+          <dl>
+            <div><dt>Tap</dt><dd>Hit the target the moment the ring lands on it.</dd></div>
+            <div><dt>Hold</dt><dd>Press and hold the target to fire your equipped Boss Core ability.</dd></div>
+            <div><dt>Screen</dt><dd>Portrait works — turn your phone sideways for a wider view of the arena.</dd></div>
+          </dl>
+        </div>
+
+        <div class="ctrl" style="--accent:var(--magenta)">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>
+            </svg>
+            On desktop
+          </h3>
+          <dl>
+            <div><dt>Click</dt><dd>Click the target, or press <kbd>Spacebar</kbd> — both count as a tap.</dd></div>
+            <div><dt>Hold</dt><dd>Hold <kbd>Spacebar</kbd> or the mouse button to fire your Boss Core ability.</dd></div>
+            <div><dt>Audio</dt><dd>Headphones help. The rhythm is your best timing cue.</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="hero__actions">
+        <a class="btn btn--play" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== 8. SCREENSHOTS ======================== -->
+  <section class="band band--tight" aria-labelledby="shots-h">
+    <div class="wrap">
+      <p class="eyebrow">Gallery</p>
+      <h2 id="shots-h">See it in motion</h2>
+
+      <!-- ===================================================================
+           HOW TO REPLACE A SCREENSHOT
+
+           Each frame below contains two things:
+             a) an img tag that is commented out, pre-filled with alt text,
+                dimensions and lazy loading
+             b) three placeholder paragraphs, wrapped between two marker
+                comments labelled SLOT and /SLOT
+
+           To swap in a real image:
+             1. Uncomment the img tag and point its src at your file.
+             2. Delete the three placeholder paragraphs and both SLOT markers.
+             3. Leave width and height on the img so the layout does not
+                jump while the image loads.
+
+           Recommended: 1600x1000 (16:10), JPG or WebP, under ~250 KB each.
+           =================================================================== -->
+      <div class="shots">
+
+        <figure class="shot rise">
+          <div class="shot__frame">
+            <!-- <img src="shots/ring-combo.jpg" alt="Rhythm Void gameplay: a cyan ring shrinking onto the magenta target with a combo counter" width="1600" height="1000" loading="lazy" decoding="async"> -->
+            <!-- SLOT -->
+            <p class="shot__slot">01</p>
+            <p class="shot__what">Ring &amp; combo</p>
+            <p class="shot__spec">1600 × 1000 · 16:10</p>
+            <!-- /SLOT -->
+          </div>
+          <figcaption>A mid-run moment — ring, target, energy bar, combo climbing.</figcaption>
+        </figure>
+
+        <figure class="shot rise">
+          <div class="shot__frame">
+            <!-- <img src="shots/boss-arena.jpg" alt="Rhythm Void boss fight arena" width="1600" height="1000" loading="lazy" decoding="async"> -->
+            <!-- SLOT -->
+            <p class="shot__slot">02</p>
+            <p class="shot__what">Boss arena</p>
+            <p class="shot__spec">1600 × 1000 · 16:10</p>
+            <!-- /SLOT -->
+          </div>
+          <figcaption>Pick your loudest boss — this is the shot people screenshot back.</figcaption>
+        </figure>
+
+        <figure class="shot rise">
+          <div class="shot__frame">
+            <!-- <img src="shots/run-results.jpg" alt="Rhythm Void end of run results screen showing score, stage and accuracy" width="1600" height="1000" loading="lazy" decoding="async"> -->
+            <!-- SLOT -->
+            <p class="shot__slot">03</p>
+            <p class="shot__what">Run results</p>
+            <p class="shot__spec">1600 × 1000 · 16:10</p>
+            <!-- /SLOT -->
+          </div>
+          <figcaption>The shareable end screen: score, stage, accuracy, bosses defeated.</figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================== CTA BAND ========================== -->
+  <section class="band band--tight">
+    <div class="wrap">
+      <div class="cta">
+        <h2>One tap and you're in</h2>
+        <p>It runs in the browser on phone or desktop. No download, no account, no waiting.</p>
+        <a class="btn btn--play" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================== 9. CONTACT ========================== -->
+  <section class="band band--tight" id="feedback" aria-labelledby="feedback-h">
+    <div class="wrap">
+      <p class="eyebrow">Playtest</p>
+      <h2 id="feedback-h">Send playtest feedback</h2>
+      <p class="lede">Rhythm Void is in active playtest. Bug reports, difficulty spikes, and "this boss feels unfair" notes are all useful.</p>
+
+      <div class="contact">
+        <a class="card rise" style="--accent:var(--cyan)" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20feedback">
+          <h3>Email the playtest</h3>
+          <p>playrhythmvoid@gmail.com — tell me what happened, which stage you were on, and what device you were playing on.</p>
+        </a>
+        <a class="card rise" style="--accent:var(--magenta)" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">
+          <h3>Play the latest build</h3>
+          <p>Always the current version — refresh to pick up new fixes and balance changes.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- =========================== 10. FOOTER =========================== -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <p class="foot__mark">Rhythm Void</p>
+      <nav aria-label="Footer">
+        <a href="#how-to-play">How to play</a>
+        <a href="#bosses">Bosses</a>
+        <a href="#feedback">Feedback</a>
+        <a href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+      </nav>
+    </div>
+    <p class="foot__fine">© <span id="yr">2026</span> Rhythm Void. Made for the browser. All names, art, and music are original to the game.</p>
+  </div>
+</footer>
+
+<div class="dock" id="dock">
+  <a class="btn btn--play" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  document.getElementById("yr").textContent = new Date().getFullYear();
+
+  /* Canonical and og:url are hardcoded to https://www.playrhythmvoid.com/ in
+     <head>. Nothing rewrites them at runtime by design: a script that "fixed"
+     them based on location.host would corrupt canonical whenever the page is
+     opened from a staging or preview host. */
+
+  /* ---------- scroll reveal: removed ----------
+     All content is visible via CSS by default. Nothing here may hide it. */
+
+  /* ---------- sticky mobile CTA, shown once the hero scrolls away ---------- */
+  var dock = document.getElementById("dock"), hero = document.querySelector(".hero");
+  if ("IntersectionObserver" in window && hero) {
+    new IntersectionObserver(function(entries){
+      dock.classList.toggle("on", !entries[0].isIntersecting);
+    }, { threshold: 0 }).observe(hero);
+  }
+
+  /* ---------- signature: live pulse ring ---------- */
+  var canvas = document.getElementById("pulse"),
+      stage  = document.getElementById("stage"),
+      verdict= document.getElementById("verdict"),
+      ctx    = canvas.getContext("2d"),
+      size = 0, cx = 0, cy = 0, maxR = 0, targetR = 0,
+      DUR = 1700, start = performance.now(),
+      judged = false, combo = 0, flash = 0, flashHue = "#eafcff",
+      running = false, raf = 0;
+
+  function resize(){
+    var box = stage.getBoundingClientRect();
+    if (!box.width) return;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    size = box.width;
+    canvas.width  = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = cy = size / 2;
+    maxR = size * 0.44;
+    targetR = size * 0.20;
+    if (!running) draw(performance.now());
+  }
+
+  function ring(r, color, width, alpha, glow){
+    if (r <= 0) return;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = width;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = glow;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  }
+
+  function currentR(now){
+    var p = ((now - start) % DUR) / DUR;
+    return maxR * (1 - p);
+  }
+
+  function draw(now){
+    ctx.clearRect(0, 0, size, size);
+
+    /* ambient ring */
+    ctx.save();
+    ctx.setLineDash([4, 12]);
+    ring(maxR * 1.02, "#8b5cff", 1, .45, 8);
+    ctx.restore();
+
+    /* target ring */
+    ring(targetR, "#ff2fb9", 2.5, .95, 16);
+    ring(targetR - 7, "#ff2fb9", 1, .28, 0);
+
+    /* core */
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.045, 0, Math.PI * 2);
+    ctx.fillStyle = "#eafcff";
+    ctx.shadowColor = "#22e9ff";
+    ctx.shadowBlur = 22;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    /* incoming ring */
+    var r = currentR(now);
+    if (r < targetR * 0.35 && !judged){ judged = true; combo = 0; }
+    if (r <= 1){ start = now; judged = false; }
+    ring(r, "#22e9ff", 3, judged ? .3 : 1, 20);
+
+    /* hit shockwave */
+    if (flash > 0){
+      ring(targetR + (1 - flash) * size * 0.22, flashHue, 2.5 * flash, flash, 26);
+      flash -= 0.045;
+    }
+
+    /* combo readout */
+    if (combo > 1){
+      ctx.font = "600 " + Math.round(size * 0.075) + "px 'Chakra Petch', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(234,252,255,.85)";
+      ctx.fillText(combo + "x", cx, cy + size * 0.36);
+    }
+
+    if (running) raf = requestAnimationFrame(draw);
+  }
+
+  function say(text, color){
+    verdict.textContent = text;
+    verdict.style.color = color;
+    verdict.classList.remove("show");
+    void verdict.offsetWidth;
+    verdict.classList.add("show");
+  }
+
+  function hit(){
+    if (reduce) return;
+    if (judged){ return; }
+    var d = Math.abs(currentR(performance.now()) - targetR);
+    judged = true;
+    if (d < size * 0.028){
+      combo++; flash = 1; flashHue = "#eafcff";
+      say("Perfect", "#eafcff");
+    } else if (d < size * 0.07){
+      combo++; flash = .7; flashHue = "#22e9ff";
+      say("Good", "#22e9ff");
+    } else {
+      combo = 0;
+      say("Miss", "#ff2fb9");
+    }
+  }
+
+  stage.addEventListener("pointerdown", function(e){ e.preventDefault(); hit(); });
+  stage.addEventListener("keydown", function(e){
+    if (e.key === "Enter" || e.key === " "){ e.preventDefault(); hit(); }
+  });
+
+  /* only animate while visible */
+  function play(on){
+    if (on && !running && !reduce){ running = true; start = performance.now(); judged = false; raf = requestAnimationFrame(draw); }
+    else if (!on && running){ running = false; cancelAnimationFrame(raf); }
+  }
+
+  window.addEventListener("resize", resize, { passive: true });
+  resize();
+
+  if (reduce){
+    draw(performance.now());
+  } else if ("IntersectionObserver" in window){
+    new IntersectionObserver(function(entries){ play(entries[0].isIntersecting); }, { threshold: .15 }).observe(stage);
+  } else {
+    play(true);
+  }
+  document.addEventListener("visibilitychange", function(){
+    if (document.hidden) play(false);
+  });
+})();
+</script>
+</body>
+</html>
