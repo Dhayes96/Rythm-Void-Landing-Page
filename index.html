@@ -13,42 +13,49 @@
      RHYTHM VOID — URL REFERENCE
 
      1. LANDING PAGE URL (live)
-        https://www.playrhythmvoid.com/
-        Used by canonical and og:url. The www host is the canonical one, so
-        make sure the root domain 301-redirects to it at your DNS/host level
-        (playrhythmvoid.com -> www.playrhythmvoid.com). Serving the same page
-        on both hosts without a redirect splits your SEO signals.
+        https://playrhythmvoid.com/
+        The apex is canonical, matching CNAME and the /play/ game URL. GitHub
+        Pages redirects www -> apex automatically once CNAME is set, so both
+        hosts resolve to one origin. That matters for more than SEO:
+        localStorage is per-origin, so a www/apex split would give the same
+        player two separate save files.
 
      2. SOCIAL CARD IMAGE
-        https://www.playrhythmvoid.com/social-card.png
+        https://playrhythmvoid.com/social-card.png
         A 1200x630 PNG at the site root. Must stay an absolute URL on the
         canonical host — relative paths do not work for social scrapers.
 
      3. GAME URL — set on every Play Free button:
-        https://dhayes96.github.io/Neon-Orbit-Playtest/
+        /play/   (served from /play/index.html in this same repo)
 
-        TODO: Update GAME_URL once the Rhythm Void game repo or custom domain
-        is live. The old Neon-Orbit-Playtest URL is intentionally kept for now
-        so the Play Free buttons do not break. When the new URL exists, find
-        and replace that string — it appears on 7 links in this file.
+        Root-relative on purpose: it follows whichever host the site settles
+        on, so it cannot drift out of sync with the canonical domain the way
+        a hardcoded absolute URL would. The public form is
+        https://playrhythmvoid.com/play/ — that absolute version lives in the
+        game's SHARE_URL constant, because shared results get pasted offsite.
+
+        Note: because these are root-relative, the Play buttons only resolve
+        when the page is served over http(s). Opening index.html straight from
+        disk will 404 on Play — that is expected and does not affect the live
+        site.
      =================================================================== -->
 
-<link rel="canonical" href="https://www.playrhythmvoid.com/">
+<link rel="canonical" href="https://playrhythmvoid.com/">
 
 <!-- ============ OPEN GRAPH / SOCIAL ============ -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Rhythm Void">
 <meta property="og:title" content="Rhythm Void — every tap keeps you alive">
 <meta property="og:description" content="Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best. Play free in your browser.">
-<meta property="og:url" content="https://www.playrhythmvoid.com/">
-<meta property="og:image" content="https://www.playrhythmvoid.com/social-card.png">
+<meta property="og:url" content="https://playrhythmvoid.com/">
+<meta property="og:image" content="https://playrhythmvoid.com/social-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Rhythm Void — glowing cyan and magenta rhythm rings on a dark void background">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Rhythm Void — every tap keeps you alive">
 <meta name="twitter:description" content="Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best. Play free in your browser.">
-<meta name="twitter:image" content="https://www.playrhythmvoid.com/social-card.png">
+<meta name="twitter:image" content="https://playrhythmvoid.com/social-card.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -694,7 +701,7 @@ footer{
 
         <!-- ==================== 2. PLAY FREE CTA ==================== -->
         <div class="hero__actions">
-          <a class="btn btn--play" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+          <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="hero">Play free</a>
           <a class="btn btn--ghost" href="#how-to-play">How to play</a>
         </div>
         <p class="hero__note"><b>No download. No account.</b> Play instantly in your browser.</p>
@@ -921,7 +928,7 @@ footer{
       </div>
 
       <div class="hero__actions">
-        <a class="btn btn--play" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+        <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="how_to_play">Play free</a>
       </div>
     </div>
   </section>
@@ -997,7 +1004,7 @@ footer{
       <div class="cta">
         <h2>One tap and you're in</h2>
         <p>It runs in the browser on phone or desktop. No download, no account, no waiting.</p>
-        <a class="btn btn--play" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+        <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="cta_band">Play free</a>
       </div>
     </div>
   </section>
@@ -1014,7 +1021,7 @@ footer{
           <h3>Email the playtest</h3>
           <p>playrhythmvoid@gmail.com — tell me what happened, which stage you were on, and what device you were playing on.</p>
         </a>
-        <a class="card rise" style="--accent:var(--magenta)" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">
+        <a class="card rise" style="--accent:var(--magenta)" href="/play/" data-event="play_free_click" data-location="feedback_card">
           <h3>Play the latest build</h3>
           <p>Always the current version — refresh to pick up new fixes and balance changes.</p>
         </a>
@@ -1032,8 +1039,10 @@ footer{
       <nav aria-label="Footer">
         <a href="#how-to-play">How to play</a>
         <a href="#bosses">Bosses</a>
-        <a href="#feedback">Feedback</a>
-        <a href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="/terms/">Terms</a>
+        <a href="/contact/">Contact</a>
+        <a href="/play/" data-event="play_free_click" data-location="footer">Play free</a>
       </nav>
     </div>
     <p class="foot__fine">© <span id="yr">2026</span> Rhythm Void. Made for the browser. All names, art, and music are original to the game.</p>
@@ -1041,7 +1050,7 @@ footer{
 </footer>
 
 <div class="dock" id="dock">
-  <a class="btn btn--play" href="https://dhayes96.github.io/Neon-Orbit-Playtest/">Play free</a>
+  <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="sticky_dock">Play free</a>
 </div>
 
 <script>
@@ -1051,7 +1060,27 @@ footer{
 
   document.getElementById("yr").textContent = new Date().getFullYear();
 
-  /* Canonical and og:url are hardcoded to https://www.playrhythmvoid.com/ in
+  /* ---------- analytics hooks ----------
+     No vendor script is installed. This forwards clicks on anything carrying
+     data-event to whichever tag manager you add later, and does nothing at all
+     until one exists. One delegated listener, so links added in future are
+     covered without touching this code.
+
+     To switch analytics on, add your provider's snippet to <head>. GA4 and GTM
+     each expose one of the two globals checked below. */
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-event]");
+    if (!el) return;
+    var name = el.getAttribute("data-event");
+    var where = el.getAttribute("data-location") || "unknown";
+    if (typeof window.gtag === "function") {
+      window.gtag("event", name, { location: where });
+    } else if (Array.isArray(window.dataLayer)) {
+      window.dataLayer.push({ event: name, location: where });
+    }
+  }, { passive: true });
+
+  /* Canonical and og:url are hardcoded to https://playrhythmvoid.com/ in
      <head>. Nothing rewrites them at runtime by design: a script that "fixed"
      them based on location.host would corrupt canonical whenever the page is
      opened from a staging or preview host. */
