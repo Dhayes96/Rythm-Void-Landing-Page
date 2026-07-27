@@ -57,33 +57,46 @@
 <meta name="twitter:description" content="Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best. Play free in your browser.">
 <meta name="twitter:image" content="https://playrhythmvoid.com/social-card.png">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<!-- No web fonts: the game uses the rounded system stack, so the landing
+     page mirrors it. Three fewer requests, and the two surfaces match. -->
 
 <style>
 /* ===================================================================
-   TOKENS
+   RHYTHM VOID \u2014 LANDING PAGE
+   Visual language mirrored from the game (/play/index.html). Tokens,
+   panel geometry, button shape and HUD text styling below are taken
+   from the game's own CSS so the two read as one product.
    =================================================================== */
 :root{
-  --void:#05060f;
-  --deep:#0a0d20;
-  --panel:#0d1129;
-  --line:rgba(140,170,255,.16);
-  --cyan:#22e9ff;
-  --magenta:#ff2fb9;
-  --violet:#8b5cff;
-  --hot:#eafcff;
-  --text:#cdd6f4;
-  --dim:#8b95bd;
+  /* --- lifted verbatim from the game's :root --- */
+  --void:#050510;
+  --c1:#00f5ff;            /* primary neon   */
+  --c2:#ff2bd6;            /* secondary neon */
+  --c3:#7dff68;            /* tertiary neon  */
+  --white:#f7fbff;
+  --danger:#ff3864;
+  --glow1:rgba(0,245,255,.75);
+  --glow2:rgba(255,43,214,.5);
+  --glow3:rgba(125,255,104,.42);
 
-  --display:"Chakra Petch",'Segoe UI',system-ui,sans-serif;
-  --body:"Space Grotesk",system-ui,-apple-system,sans-serif;
+  /* --- landing-page derivations --- */
+  --panel:rgba(8,8,20,.55);
+  --panel-solid:rgba(8,8,20,.82);
+  --line:rgba(255,255,255,.12);
+  --line-soft:rgba(255,255,255,.07);
+  --text:#c3d1e4;
+  --dim:#8592ad;
 
+  /* The game ships no web fonts \u2014 it uses the rounded system stack below.
+     Matching it keeps the two surfaces identical and costs zero requests. */
+  --ui:ui-rounded,"SF Pro Rounded",Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+
+  --r:18px;                /* the game's HUD corner radius */
+  --r-lg:24px;
+  --pill:999px;
   --pad:clamp(20px,5vw,40px);
-  --gap:clamp(16px,3vw,24px);
+  --gap:clamp(14px,2.6vw,20px);
   --sec:clamp(64px,11vw,120px);
-  --r:14px;
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -92,185 +105,245 @@ body{
   margin:0;
   background:var(--void);
   color:var(--text);
-  font-family:var(--body);
+  font-family:var(--ui);
   font-size:clamp(15px,1.6vw,17px);
   line-height:1.65;
   overflow-x:hidden;
   -webkit-font-smoothing:antialiased;
 }
 
-/* ambient field — gradients only, no filters, cheap to paint */
+/* ===================================================================
+   BACKGROUND \u2014 void, arena grid, neon arcs. Gradients only, no images.
+   =================================================================== */
 body::before{
   content:"";
   position:fixed;
   inset:0;
   z-index:-2;
   background:
-    radial-gradient(60% 45% at 78% 8%, rgba(255,47,185,.16), transparent 65%),
-    radial-gradient(70% 55% at 12% 22%, rgba(34,233,255,.14), transparent 65%),
-    radial-gradient(90% 70% at 50% 108%, rgba(139,92,255,.20), transparent 70%),
-    linear-gradient(180deg,#05060f 0%,#070a1a 45%,#05060f 100%);
+    radial-gradient(46% 34% at 78% 6%,  rgba(255,43,214,.20), transparent 64%),
+    radial-gradient(52% 40% at 10% 18%, rgba(0,245,255,.18),  transparent 66%),
+    radial-gradient(40% 30% at 88% 62%, rgba(125,255,104,.10),transparent 68%),
+    radial-gradient(80% 62% at 50% 106%,rgba(255,43,214,.16), transparent 70%),
+    linear-gradient(180deg,#050510 0%,#06071a 42%,#050510 100%);
 }
+/* arena grid + orbit arcs, masked so they fade out down the page */
 body::after{
   content:"";
   position:fixed;
   inset:0;
   z-index:-1;
   pointer-events:none;
-  opacity:.35;
   background-image:
-    linear-gradient(rgba(140,170,255,.05) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(140,170,255,.05) 1px,transparent 1px);
-  background-size:64px 64px;
-  mask-image:radial-gradient(80% 60% at 50% 0%,#000 20%,transparent 85%);
-  -webkit-mask-image:radial-gradient(80% 60% at 50% 0%,#000 20%,transparent 85%);
+    repeating-radial-gradient(circle at 50% 30%,
+      transparent 0 118px, rgba(0,245,255,.055) 118px 119px, transparent 119px 240px),
+    linear-gradient(rgba(140,170,255,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(140,170,255,.045) 1px,transparent 1px);
+  background-size:auto, 62px 62px, 62px 62px;
+  mask-image:radial-gradient(88% 62% at 50% 4%,#000 12%,transparent 88%);
+  -webkit-mask-image:radial-gradient(88% 62% at 50% 4%,#000 12%,transparent 88%);
 }
 
 img{max-width:100%;display:block}
-a{color:var(--cyan)}
+a{color:var(--c1)}
 
 :focus-visible{
-  outline:2px solid var(--cyan);
+  outline:2px solid var(--c1);
   outline-offset:3px;
-  border-radius:4px;
+  border-radius:6px;
 }
 
 .skip{
   position:absolute;left:-9999px;top:0;z-index:100;
-  background:var(--cyan);color:#04121a;padding:10px 16px;font-family:var(--display);
+  background:var(--c1);color:#050510;padding:10px 16px;
+  font-weight:900;letter-spacing:.06em;text-transform:uppercase;
 }
 .skip:focus{left:12px;top:12px}
 
 /* ===================================================================
-   LAYOUT PRIMITIVES
+   LAYOUT
    =================================================================== */
 .wrap{width:100%;max-width:1140px;margin-inline:auto;padding-inline:var(--pad)}
 .band{padding-block:var(--sec)}
 .band--tight{padding-block:calc(var(--sec) * .62)}
 
+/* HUD label \u2014 the game's small-caps stat label: 10px / .16em / upper */
 .eyebrow{
-  font-family:var(--display);
-  font-size:.72rem;
-  letter-spacing:.28em;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.16em;
   text-transform:uppercase;
-  color:var(--cyan);
+  color:var(--c1);
   margin:0 0 14px;
   display:flex;
   align-items:center;
   gap:12px;
+  text-shadow:0 0 12px var(--glow1);
 }
 .eyebrow::after{
   content:"";
   flex:1;
   height:1px;
-  background:linear-gradient(90deg,rgba(34,233,255,.5),transparent);
+  background:linear-gradient(90deg,rgba(0,245,255,.45),transparent);
 }
 
-h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.02;margin:0;letter-spacing:.01em}
-h2{font-size:clamp(1.85rem,5.4vw,3rem);text-transform:uppercase}
-h3{font-size:1.06rem;letter-spacing:.05em;text-transform:uppercase}
+/* HUD value type: heavy, tight, glowing */
+h1,h2,h3{
+  font-family:var(--ui);
+  font-weight:900;
+  line-height:1.02;
+  margin:0;
+  color:var(--white);
+}
+h2{
+  font-size:clamp(1.8rem,5.2vw,2.9rem);
+  text-transform:uppercase;
+  letter-spacing:.02em;
+  text-shadow:0 0 18px rgba(0,245,255,.28);
+}
+h3{
+  font-size:1.02rem;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
 
 .lede{max-width:62ch;color:var(--dim);margin:18px 0 0;font-size:1.02em}
 
 /* ===================================================================
-   BUTTONS
+   BUTTONS \u2014 the game's pill: 999px, dark text, cyan\u2192magenta, heavy glow
    =================================================================== */
 .btn{
   display:inline-flex;
   align-items:center;
   justify-content:center;
   gap:10px;
-  font-family:var(--display);
-  font-weight:700;
-  font-size:1rem;
-  letter-spacing:.16em;
+  font-family:var(--ui);
+  font-weight:950;
+  font-size:16px;
+  letter-spacing:.06em;
   text-transform:uppercase;
   text-decoration:none;
-  padding:16px 30px;
-  border-radius:var(--r);
-  border:1px solid transparent;
+  min-height:56px;
+  padding:14px 30px;
+  border:0;
+  border-radius:var(--pill);
   cursor:pointer;
-  transition:transform .18s ease,box-shadow .25s ease,background .25s ease;
-  min-height:54px;
+  transition:transform .18s ease,box-shadow .25s ease,filter .25s ease;
 }
 .btn--play{
-  color:#03121a;
-  background:linear-gradient(120deg,var(--cyan),#7df6ff 45%,var(--magenta));
-  box-shadow:0 0 0 1px rgba(255,255,255,.18) inset,0 10px 40px -12px rgba(34,233,255,.85);
+  color:#050510;
+  background:linear-gradient(90deg,var(--c1),var(--c2));
+  box-shadow:0 0 26px var(--glow1),0 0 44px var(--glow2);
 }
 .btn--play:hover,.btn--play:focus-visible{
   transform:translateY(-2px);
-  box-shadow:0 0 0 1px rgba(255,255,255,.3) inset,0 16px 52px -10px rgba(255,47,185,.75);
+  filter:brightness(1.08);
+  box-shadow:0 0 34px var(--glow1),0 0 60px var(--glow2);
 }
 .btn--ghost{
-  color:var(--text);
-  border-color:var(--line);
-  background:rgba(13,17,41,.6);
+  color:var(--white);
+  font-weight:800;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.2);
 }
 .btn--ghost:hover,.btn--ghost:focus-visible{
-  border-color:var(--violet);
-  color:#fff;
   transform:translateY(-2px);
+  border-color:var(--c1);
+  background:rgba(255,255,255,.11);
 }
 
 /* ===================================================================
-   HERO
+   HERO \u2014 game screen, not a marketing block
    =================================================================== */
 .hero{
   position:relative;
-  padding-block:clamp(48px,9vw,96px) clamp(56px,9vw,104px);
+  padding-block:clamp(40px,8vw,84px) clamp(52px,9vw,100px);
 }
-.hero__grid{
-  display:grid;
-  gap:clamp(32px,6vw,56px);
-  align-items:center;
+/* arena floor glow behind the hero, echoing the in-game arena vignette */
+.hero::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:radial-gradient(circle at 50% 44%,rgba(255,43,214,.16),transparent 58%);
+  pointer-events:none;
 }
+.hero__grid{display:grid;gap:clamp(30px,6vw,56px);align-items:center}
+
 .hero__tag{
-  font-family:var(--display);
-  font-size:.7rem;
-  letter-spacing:.3em;
-  text-transform:uppercase;
-  color:var(--dim);
-  border:1px solid var(--line);
-  border-radius:999px;
-  padding:7px 15px;
   display:inline-block;
-  margin-bottom:22px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:#050510;
+  background:linear-gradient(90deg,var(--c1),var(--c3));
+  box-shadow:0 0 22px var(--glow1);
+  border-radius:var(--pill);
+  padding:6px 16px;
+  margin:0 0 22px;
 }
 .hero h1{
-  font-size:clamp(3.1rem,15vw,7.2rem);
-  letter-spacing:.02em;
+  font-size:clamp(3rem,14vw,6.8rem);
+  font-weight:900;
+  letter-spacing:.01em;
   text-transform:uppercase;
-  background:linear-gradient(100deg,var(--hot) 0%,var(--cyan) 38%,var(--magenta) 82%);
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-  filter:drop-shadow(0 0 26px rgba(34,233,255,.35));
+  color:var(--white);
+  text-shadow:
+    0 0 18px rgba(0,245,255,.55),
+    0 0 44px rgba(255,43,214,.40),
+    0 0 90px rgba(0,245,255,.22);
 }
 .hero__sub{
-  font-family:var(--display);
-  font-size:clamp(1.02rem,2.6vw,1.3rem);
-  color:#fff;
+  font-size:clamp(1.02rem,2.6vw,1.28rem);
+  font-weight:800;
+  color:var(--white);
   margin:20px 0 0;
   max-width:34ch;
   line-height:1.4;
 }
 .hero__copy{max-width:52ch;color:var(--dim);margin:14px 0 0}
-.hero__actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}
-.hero__note{
-  margin:18px 0 0;
-  font-size:.86rem;
-  color:var(--dim);
-  letter-spacing:.02em;
-}
-.hero__note b{color:var(--cyan);font-weight:500}
+.hero__actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+.hero__note{margin:18px 0 0;font-size:.86rem;color:var(--dim)}
+.hero__note b{color:var(--c1);font-weight:800}
 
-/* signature: live pulse demo */
-.demo{
-  justify-self:center;
-  width:min(100%,380px);
+/* ---- live demo, framed as HUD ---- */
+.demo{justify-self:center;width:min(100%,400px)}
+.demo__hud{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-bottom:14px;
+}
+.demo__cell{
+  border:1px solid var(--line);
+  background:rgba(8,8,20,.35);
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+  box-shadow:0 0 24px var(--glow2),inset 0 0 24px rgba(255,255,255,.03);
+  border-radius:var(--r);
+  padding:9px 12px;
   text-align:center;
 }
+.demo__k{
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--dim);
+}
+.demo__v{
+  font-size:clamp(18px,4vw,26px);
+  font-weight:900;
+  line-height:1;
+  margin-top:4px;
+  color:var(--white);
+  text-shadow:0 0 12px var(--glow1);
+}
+.demo__v[data-j="perfect"]{color:var(--c3);text-shadow:0 0 14px var(--glow3)}
+.demo__v[data-j="good"]{color:var(--c1);text-shadow:0 0 14px var(--glow1)}
+.demo__v[data-j="miss"]{color:var(--danger);text-shadow:0 0 14px rgba(255,56,100,.6)}
+
 .demo__stage{
   position:relative;
   aspect-ratio:1;
@@ -278,20 +351,20 @@ h3{font-size:1.06rem;letter-spacing:.05em;text-transform:uppercase}
   cursor:pointer;
   touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
-  background:radial-gradient(circle at 50% 50%,rgba(139,92,255,.16),transparent 62%);
+  background:radial-gradient(circle at 50% 50%,rgba(255,43,214,.14),transparent 62%);
 }
 .demo__stage canvas{width:100%;height:100%;display:block}
 .demo__verdict{
   position:absolute;
   inset:auto 0 50%;
   transform:translateY(50%);
-  font-family:var(--display);
-  font-size:1.5rem;
+  font-size:1.4rem;
+  font-weight:950;
   letter-spacing:.22em;
   text-transform:uppercase;
   pointer-events:none;
   opacity:0;
-  color:var(--hot);
+  color:var(--white);
 }
 .demo__verdict.show{animation:pop .62s ease-out}
 @keyframes pop{
@@ -300,67 +373,77 @@ h3{font-size:1.06rem;letter-spacing:.05em;text-transform:uppercase}
   100%{opacity:0;transform:translateY(50%) scale(1.14)}
 }
 .demo__hint{
-  font-family:var(--display);
-  font-size:.7rem;
-  letter-spacing:.24em;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.16em;
   text-transform:uppercase;
   color:var(--dim);
+  text-align:center;
   margin:14px 0 0;
 }
-.demo__hint strong{color:var(--magenta);font-weight:600}
+.demo__hint strong{color:var(--c2);font-weight:900}
 
 @media (min-width:900px){
   .hero__grid{grid-template-columns:1.05fr .95fr}
-  .demo{width:min(100%,420px)}
+  .demo{width:min(100%,430px)}
 }
 
 /* ===================================================================
-   CARDS
+   HUD PANELS \u2014 cards, controls, contact. Game geometry: 18px + neon edge.
+   backdrop-filter is reserved for the hero HUD and the sticky dock; a
+   blurred layer behind every card costs real frames on mobile.
    =================================================================== */
-.cards{
-  display:grid;
-  gap:var(--gap);
-  margin-top:clamp(30px,5vw,48px);
-  grid-template-columns:1fr;
-}
+.cards{display:grid;gap:var(--gap);margin-top:clamp(28px,5vw,46px);grid-template-columns:1fr}
 @media (min-width:620px){.cards{grid-template-columns:1fr 1fr}}
 @media (min-width:1000px){.cards--4{grid-template-columns:repeat(4,1fr)}}
 
 .card{
   position:relative;
-  background:linear-gradient(160deg,rgba(13,17,41,.92),rgba(7,10,26,.92));
+  background:var(--panel-solid);
   border:1px solid var(--line);
   border-radius:var(--r);
-  padding:26px 22px 28px;
+  padding:24px 22px 26px;
   overflow:hidden;
-  transition:transform .22s ease,border-color .22s ease;
+  box-shadow:0 0 24px rgba(255,43,214,.10),inset 0 0 24px rgba(255,255,255,.03);
+  transition:transform .22s ease,border-color .22s ease,box-shadow .25s ease;
 }
 .card::before{
   content:"";
   position:absolute;
   inset:0 0 auto;
   height:2px;
-  background:var(--accent,var(--cyan));
-  opacity:.8;
+  background:var(--accent,var(--c1));
+  box-shadow:0 0 14px var(--accent,var(--c1));
 }
-.card:hover{transform:translateY(-4px);border-color:rgba(140,170,255,.34)}
-.card h3{color:#fff;margin-bottom:12px}
+.card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(255,255,255,.22);
+  box-shadow:0 0 30px rgba(0,245,255,.16),inset 0 0 24px rgba(255,255,255,.04);
+}
+.card h3{color:var(--white);margin-bottom:10px}
 .card p{margin:0;color:var(--dim);font-size:.95rem}
-.card__mark{
-  width:34px;height:34px;margin-bottom:18px;
-  color:var(--accent,var(--cyan));
-}
+.card__mark{width:32px;height:32px;margin-bottom:16px;color:var(--accent,var(--c1));
+  filter:drop-shadow(0 0 10px currentColor)}
 .card__mark svg{width:100%;height:100%;display:block}
+/* small HUD tag inside a panel, e.g. TIMING / CORE / REALM / SCORE */
+.card__tag{
+  display:inline-block;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--accent,var(--c1));
+  border:1px solid currentColor;
+  border-radius:var(--pill);
+  padding:3px 10px;
+  margin-bottom:12px;
+  opacity:.9;
+}
 
 /* ===================================================================
    BOSSES
    =================================================================== */
-.bosses{
-  display:grid;
-  gap:var(--gap);
-  margin-top:clamp(30px,5vw,48px);
-  grid-template-columns:1fr;
-}
+.bosses{display:grid;gap:var(--gap);margin-top:clamp(28px,5vw,46px);grid-template-columns:1fr}
 @media (min-width:680px){.bosses{grid-template-columns:1fr 1fr}}
 
 .boss{
@@ -370,92 +453,85 @@ h3{font-size:1.06rem;letter-spacing:.05em;text-transform:uppercase}
   padding:20px;
   border:1px solid var(--line);
   border-radius:var(--r);
-  background:linear-gradient(110deg,rgba(13,17,41,.9),rgba(5,6,15,.9));
-  transition:border-color .22s ease,transform .22s ease;
+  background:var(--panel-solid);
+  box-shadow:inset 0 0 24px rgba(255,255,255,.03);
+  transition:border-color .22s ease,transform .22s ease,box-shadow .25s ease;
 }
-.boss:hover{transform:translateX(4px);border-color:var(--accent)}
-.boss__glyph{
-  flex:0 0 auto;
-  width:52px;height:52px;
-  color:var(--accent);
-  filter:drop-shadow(0 0 12px currentColor);
+.boss:hover{
+  transform:translateX(4px);
+  border-color:var(--accent);
+  box-shadow:0 0 26px -6px var(--accent),inset 0 0 24px rgba(255,255,255,.04);
 }
+.boss__glyph{flex:0 0 auto;width:52px;height:52px;color:var(--accent);
+  filter:drop-shadow(0 0 12px currentColor)}
 .boss__glyph svg{width:100%;height:100%;display:block}
 .boss__name{
-  font-family:var(--display);
-  font-size:1.12rem;
-  letter-spacing:.09em;
-  color:#fff;
+  font-size:1.1rem;
+  font-weight:900;
+  letter-spacing:.06em;
+  color:var(--white);
   text-transform:uppercase;
   line-height:1.2;
+  margin:0;
 }
 .boss__core{
-  font-family:var(--display);
-  font-size:.72rem;
-  letter-spacing:.2em;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
   text-transform:uppercase;
   color:var(--accent);
-  margin-top:7px;
+  margin:7px 0 0;
+  text-shadow:0 0 10px currentColor;
 }
 .boss__note{font-size:.84rem;color:var(--dim);margin:6px 0 0}
 
 /* ===================================================================
    SECRET REALMS
    =================================================================== */
-.realms{
-  display:grid;
-  gap:var(--gap);
-  margin-top:clamp(30px,5vw,48px);
-  grid-template-columns:1fr;
-}
+.realms{display:grid;gap:var(--gap);margin-top:clamp(28px,5vw,46px);grid-template-columns:1fr}
 @media (min-width:620px){.realms{grid-template-columns:repeat(3,1fr)}}
 
 .realm{
   position:relative;
-  border:1px dashed rgba(139,92,255,.42);
+  border:1px dashed rgba(125,255,104,.34);
   border-radius:var(--r);
-  padding:30px 22px;
+  padding:28px 22px;
   text-align:center;
-  background:rgba(10,13,32,.55);
+  background:rgba(8,8,20,.5);
   overflow:hidden;
 }
 .realm__lock{
-  font-family:var(--display);
-  font-size:2.1rem;
+  font-size:2rem;
+  font-weight:950;
   letter-spacing:.18em;
-  color:var(--violet);
-  text-shadow:0 0 22px rgba(139,92,255,.8);
+  color:var(--c3);
+  text-shadow:0 0 22px var(--glow3);
+  margin:0;
 }
 .realm__label{
-  font-family:var(--display);
-  font-size:.72rem;
-  letter-spacing:.22em;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.16em;
   text-transform:uppercase;
   color:var(--dim);
-  margin-top:12px;
+  margin:12px 0 0;
 }
-.realm__blur{
-  margin:10px 0 0;
-  font-size:.9rem;
-  color:var(--dim);
-  filter:blur(4px);
-  user-select:none;
-}
+.realm__blur{margin:10px 0 0;font-size:.9rem;color:var(--dim);filter:blur(4px);user-select:none}
 
 /* ===================================================================
-   HOW TO PLAY — a real ordered sequence, so numbers carry meaning
+   HOW TO PLAY
    =================================================================== */
 .steps{
   list-style:none;
   counter-reset:step;
-  margin:clamp(30px,5vw,48px) 0 0;
+  margin:clamp(28px,5vw,46px) 0 0;
   padding:0;
   display:grid;
   gap:2px;
   border:1px solid var(--line);
   border-radius:var(--r);
   overflow:hidden;
-  background:var(--line);
+  background:var(--line-soft);
 }
 .steps li{
   counter-increment:step;
@@ -463,172 +539,143 @@ h3{font-size:1.06rem;letter-spacing:.05em;text-transform:uppercase}
   gap:18px;
   align-items:baseline;
   padding:20px 22px;
-  background:rgba(9,12,29,.94);
+  background:var(--panel-solid);
 }
 .steps li::before{
   content:counter(step,decimal-leading-zero);
-  font-family:var(--display);
-  font-size:.92rem;
-  letter-spacing:.1em;
-  color:var(--magenta);
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.16em;
+  color:var(--c2);
+  text-shadow:0 0 12px var(--glow2);
   flex:0 0 auto;
 }
-.steps li b{color:#fff;font-weight:500}
+.steps li b{color:var(--white);font-weight:800}
 kbd{
-  font-family:var(--display);
+  font-family:var(--ui);
   font-size:.78em;
+  font-weight:800;
   border:1px solid var(--line);
   border-bottom-width:2px;
-  border-radius:5px;
-  padding:2px 7px;
-  color:var(--cyan);
-  background:rgba(34,233,255,.07);
+  border-radius:8px;
+  padding:2px 8px;
+  color:var(--c1);
+  background:rgba(0,245,255,.08);
 }
 
-/* ===================================================================
-   CONTROLS NOTE
-   =================================================================== */
-.controls{
-  display:grid;
-  gap:var(--gap);
-  margin-top:var(--gap);
-  grid-template-columns:1fr;
-}
+.controls{display:grid;gap:var(--gap);margin-top:var(--gap);grid-template-columns:1fr}
 @media (min-width:680px){.controls{grid-template-columns:1fr 1fr}}
-
 .ctrl{
   border:1px solid var(--line);
   border-radius:var(--r);
   padding:22px;
-  background:rgba(9,12,29,.7);
+  background:var(--panel-solid);
+  box-shadow:inset 0 0 24px rgba(255,255,255,.03);
 }
-.ctrl h3{
-  color:#fff;
-  display:flex;
-  align-items:center;
-  gap:11px;
-  margin-bottom:16px;
-}
-.ctrl h3 svg{width:19px;height:19px;color:var(--accent,var(--cyan));flex:0 0 auto}
+.ctrl h3{color:var(--white);display:flex;align-items:center;gap:11px;margin-bottom:16px}
+.ctrl h3 svg{width:19px;height:19px;color:var(--accent,var(--c1));flex:0 0 auto;
+  filter:drop-shadow(0 0 8px currentColor)}
 .ctrl dl{margin:0;display:grid;gap:11px}
 .ctrl div{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
 .ctrl dt{
-  font-family:var(--display);
-  font-size:.7rem;
-  letter-spacing:.14em;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
   text-transform:uppercase;
-  color:var(--accent,var(--cyan));
+  color:var(--accent,var(--c1));
   flex:0 0 auto;
   min-width:78px;
 }
 .ctrl dd{margin:0;font-size:.92rem;color:var(--dim);flex:1 1 150px}
 
 /* ===================================================================
-   SHOTS
+   SCREENSHOTS \u2014 game capture cards
    =================================================================== */
-.shots{
-  display:grid;
-  gap:var(--gap);
-  margin-top:clamp(30px,5vw,48px);
-  grid-template-columns:1fr;
-}
+.shots{display:grid;gap:var(--gap);margin-top:clamp(28px,5vw,46px);grid-template-columns:1fr}
 @media (min-width:620px){.shots{grid-template-columns:repeat(3,1fr)}}
 
 .shot{margin:0}
+.shot__tag{
+  display:inline-block;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:#050510;
+  background:linear-gradient(90deg,var(--c1),var(--c3));
+  box-shadow:0 0 18px var(--glow1);
+  border-radius:var(--pill);
+  padding:4px 12px;
+  margin-bottom:10px;
+}
 .shot__frame{
   position:relative;
   aspect-ratio:var(--shot-ratio,16/10);
   border:1px solid var(--line);
   border-radius:var(--r);
   background:
-    radial-gradient(circle at 50% 42%,rgba(34,233,255,.14),transparent 62%),
-    repeating-linear-gradient(135deg,rgba(140,170,255,.045) 0 12px,transparent 12px 24px),
-    var(--deep);
-  display:grid;
-  place-content:center;
-  justify-items:center;
-  text-align:center;
-  gap:8px;
-  padding:18px;
+    radial-gradient(circle at 50% 45%,rgba(0,245,255,.12),transparent 62%),
+    #04040c;
+  box-shadow:
+    0 0 34px -8px var(--glow1),
+    0 0 60px -18px var(--glow2),
+    inset 0 0 24px rgba(255,255,255,.04);
   overflow:hidden;
+  transition:box-shadow .25s ease,transform .22s ease;
 }
-.shot__frame img{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
+.shot:hover .shot__frame{
+  transform:translateY(-3px);
+  box-shadow:0 0 44px -6px var(--glow1),0 0 76px -16px var(--glow2),
+             inset 0 0 24px rgba(255,255,255,.05);
 }
-.shot figcaption{
-  font-size:.82rem;
-  color:var(--dim);
-  margin-top:12px;
-  padding-inline:2px;
-}
+.shot__frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shot figcaption{font-size:.82rem;color:var(--dim);margin-top:12px;padding-inline:2px}
 
 /* ===================================================================
    CTA BAND
    =================================================================== */
 .cta{
   border:1px solid var(--line);
-  border-radius:calc(var(--r) + 6px);
-  padding:clamp(34px,6vw,56px) var(--pad);
+  border-radius:var(--r-lg);
+  padding:clamp(32px,6vw,54px) var(--pad);
   text-align:center;
   background:
-    radial-gradient(70% 120% at 50% 0%,rgba(255,47,185,.18),transparent 70%),
-    radial-gradient(70% 120% at 50% 100%,rgba(34,233,255,.16),transparent 70%),
-    rgba(8,11,26,.85);
+    radial-gradient(70% 120% at 50% 0%,rgba(255,43,214,.20),transparent 70%),
+    radial-gradient(70% 120% at 50% 100%,rgba(0,245,255,.16),transparent 70%),
+    rgba(8,8,20,.7);
+  box-shadow:inset 0 0 34px rgba(255,255,255,.03);
 }
-.cta h2{font-size:clamp(1.7rem,5vw,2.6rem)}
+.cta h2{font-size:clamp(1.7rem,5vw,2.5rem)}
 .cta p{color:var(--dim);max-width:48ch;margin:16px auto 0}
-.cta .btn{margin-top:28px}
+.cta .btn{margin-top:26px}
 
 /* ===================================================================
    CONTACT + FOOTER
    =================================================================== */
-.contact{
-  display:grid;
-  gap:var(--gap);
-  margin-top:clamp(26px,4vw,40px);
-  grid-template-columns:1fr;
-}
+.contact{display:grid;gap:var(--gap);margin-top:clamp(24px,4vw,38px);grid-template-columns:1fr}
 @media (min-width:680px){.contact{grid-template-columns:1fr 1fr}}
 .contact a.card{text-decoration:none;display:block}
 .contact a.card p{margin-top:10px}
 
 footer{
   border-top:1px solid var(--line);
-  padding-block:38px calc(38px + env(safe-area-inset-bottom));
+  padding-block:36px calc(36px + env(safe-area-inset-bottom));
   margin-top:var(--sec);
 }
-.foot{
-  display:flex;
-  flex-wrap:wrap;
-  gap:16px;
-  align-items:center;
-  justify-content:space-between;
-}
+.foot{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
 .foot__mark{
-  font-family:var(--display);
-  letter-spacing:.24em;
+  font-weight:900;
+  letter-spacing:.22em;
   text-transform:uppercase;
-  color:#fff;
+  color:var(--white);
   font-size:.95rem;
+  margin:0;
+  text-shadow:0 0 14px rgba(0,245,255,.35);
 }
 .foot nav{display:flex;flex-wrap:wrap;gap:20px}
-.foot nav a{
-  color:var(--dim);
-  text-decoration:none;
-  font-size:.86rem;
-  letter-spacing:.06em;
-}
-.foot nav a:hover{color:var(--cyan)}
-.foot__fine{
-  color:var(--dim);
-  font-size:.78rem;
-  margin:22px 0 0;
-  opacity:.72;
-}
+.foot nav a{color:var(--dim);text-decoration:none;font-size:.86rem;letter-spacing:.04em}
+.foot nav a:hover{color:var(--c1)}
+.foot__fine{color:var(--dim);font-size:.78rem;margin:22px 0 0;opacity:.72}
 
 /* ===================================================================
    STICKY MOBILE CTA
@@ -638,7 +685,9 @@ footer{
   left:0;right:0;bottom:0;
   z-index:40;
   padding:12px var(--pad) calc(12px + env(safe-area-inset-bottom));
-  background:linear-gradient(180deg,rgba(5,6,15,0),rgba(5,6,15,.94) 32%);
+  background:linear-gradient(180deg,rgba(5,5,16,0),rgba(5,5,16,.94) 32%);
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
   transform:translateY(120%);
   transition:transform .3s ease;
   pointer-events:none;
@@ -648,19 +697,15 @@ footer{
 @media (min-width:900px){.dock{display:none}}
 
 /* ===================================================================
-   REVEAL + MOTION PREFERENCES
-   Content is visible by default and never depends on JavaScript.
+   MOTION \u2014 content is visible by default and never gated on JS.
    =================================================================== */
-.rise{
-  opacity:1;
-  transform:none;
-  transition:none;
-}
+.rise{opacity:1;transform:none;transition:none}
 
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important}
 }
+
 </style>
 </head>
 
@@ -688,6 +733,21 @@ footer{
 
       <!-- signature element: a live, tappable ring — the core mechanic itself -->
       <div class="demo">
+        <!-- HUD readout, driven by the live demo below — real values, not decoration -->
+        <div class="demo__hud">
+          <div class="demo__cell">
+            <p class="demo__k">Combo</p>
+            <p class="demo__v" id="hudCombo">0</p>
+          </div>
+          <div class="demo__cell">
+            <p class="demo__k">Last</p>
+            <p class="demo__v" id="hudLast">—</p>
+          </div>
+          <div class="demo__cell">
+            <p class="demo__k">Best</p>
+            <p class="demo__v" id="hudBest">0</p>
+          </div>
+        </div>
         <div class="demo__stage" id="stage" role="button" tabindex="0" aria-label="Practice ring. Tap or press Enter when the ring meets the target.">
           <canvas id="pulse" aria-hidden="true"></canvas>
           <p class="demo__verdict" id="verdict" aria-live="polite"></p>
@@ -704,42 +764,46 @@ footer{
       <h2 id="features-h">Built around one perfect tap</h2>
       <div class="cards cards--4">
 
-        <article class="card rise" style="--accent:var(--cyan)">
+        <article class="card rise" style="--accent:var(--c1)">
           <div class="card__mark" aria-hidden="true">
             <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="20" cy="20" r="17"/><circle cx="20" cy="20" r="8" stroke-dasharray="3 4"/><circle cx="20" cy="3" r="2.5" fill="currentColor" stroke="none"/>
             </svg>
           </div>
+          <p class="card__tag">Timing</p>
           <h3>Perfect timing</h3>
           <p>Tap shrinking glowing rings at the perfect moment to build combo, restore energy, and push deeper into the void.</p>
         </article>
 
-        <article class="card rise" style="--accent:var(--magenta)">
+        <article class="card rise" style="--accent:var(--c2)">
           <div class="card__mark" aria-hidden="true">
             <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 4 33 12v16L20 36 7 28V12z"/><circle cx="20" cy="20" r="5" fill="currentColor" stroke="none"/>
             </svg>
           </div>
+          <p class="card__tag">Core</p>
           <h3>Boss core abilities</h3>
           <p>Defeat bosses and capture their cores to unlock powers like Hex Saw, Tri-Laser, Prism Guard, and Eclipse Realm.</p>
         </article>
 
-        <article class="card rise" style="--accent:var(--violet)">
+        <article class="card rise" style="--accent:var(--c3)">
           <div class="card__mark" aria-hidden="true">
             <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 3 37 20 20 37 3 20z" stroke-dasharray="5 5"/><path d="M20 12v16M12 20h16"/>
             </svg>
           </div>
+          <p class="card__tag">Realm</p>
           <h3>Secret realms</h3>
           <p>Discover hidden modes with unique music, new bosses, and completely different energy.</p>
         </article>
 
-        <article class="card rise" style="--accent:var(--hot)">
+        <article class="card rise" style="--accent:var(--white)">
           <div class="card__mark" aria-hidden="true">
             <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M6 34V22M20 34V8M34 34V16"/><circle cx="20" cy="8" r="3" fill="currentColor" stroke="none"/>
             </svg>
           </div>
+          <p class="card__tag">Score</p>
           <h3>Weekly leaderboard</h3>
           <p>Track your weekly best, share your run, and challenge friends to beat your score.</p>
         </article>
@@ -757,7 +821,7 @@ footer{
 
       <div class="bosses">
 
-        <article class="boss rise" style="--accent:var(--cyan)">
+        <article class="boss rise" style="--accent:var(--c1)">
           <div class="boss__glyph" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M24 5 40 14v20L24 43 8 34V14z"/><path d="M24 15 33 20v10l-9 5-9-5V20z" stroke-dasharray="4 3"/>
@@ -770,7 +834,7 @@ footer{
           </div>
         </article>
 
-        <article class="boss rise" style="--accent:var(--magenta)">
+        <article class="boss rise" style="--accent:var(--c2)">
           <div class="boss__glyph" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M24 5 43 40H5z"/><path d="M24 18 34 35H14z" stroke-dasharray="4 3"/>
@@ -783,7 +847,7 @@ footer{
           </div>
         </article>
 
-        <article class="boss rise" style="--accent:var(--violet)">
+        <article class="boss rise" style="--accent:var(--c3)">
           <div class="boss__glyph" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M24 4 44 24 24 44 4 24z"/><path d="M24 4v40M4 24h40" stroke-dasharray="3 4"/>
@@ -796,7 +860,7 @@ footer{
           </div>
         </article>
 
-        <article class="boss rise" style="--accent:var(--hot)">
+        <article class="boss rise" style="--accent:var(--white)">
           <div class="boss__glyph" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
               <circle cx="24" cy="24" r="19"/><circle cx="30" cy="21" r="15" fill="#05060f" stroke="none"/><circle cx="30" cy="21" r="15" stroke-dasharray="4 5"/>
@@ -849,11 +913,11 @@ footer{
       <p class="lede">Every run gives you a score, stage, accuracy, bosses defeated, and shareable result. Send it to a friend and see who survives longer.</p>
 
       <div class="cards">
-        <article class="card rise" style="--accent:var(--cyan)">
+        <article class="card rise" style="--accent:var(--c1)">
           <h3>Your run, measured</h3>
           <p>Score, stage reached, accuracy, and bosses defeated — recorded at the end of every attempt.</p>
         </article>
-        <article class="card rise" style="--accent:var(--magenta)">
+        <article class="card rise" style="--accent:var(--c2)">
           <h3>Share the challenge</h3>
           <p>Copy your result and send it to a friend. Whoever survives longer takes the week.</p>
         </article>
@@ -877,7 +941,7 @@ footer{
       </ol>
 
       <div class="controls">
-        <div class="ctrl" style="--accent:var(--cyan)">
+        <div class="ctrl" style="--accent:var(--c1)">
           <h3>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/>
@@ -891,7 +955,7 @@ footer{
           </dl>
         </div>
 
-        <div class="ctrl" style="--accent:var(--magenta)">
+        <div class="ctrl" style="--accent:var(--c2)">
           <h3>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>
@@ -936,6 +1000,7 @@ footer{
       <div class="shots">
 
         <figure class="shot rise">
+          <p class="shot__tag">01 · Combo Fever</p>
           <div class="shot__frame">
             <img src="shots/ring-combo.jpg" alt="Rhythm Void gameplay showing glowing neon rings, a Perfect hit, Combo Fever, score, best score, and energy bar." width="1600" height="1000" loading="lazy" decoding="async">
           </div>
@@ -943,6 +1008,7 @@ footer{
         </figure>
 
         <figure class="shot rise">
+          <p class="shot__tag">02 · Boss Arena</p>
           <div class="shot__frame">
             <img src="shots/boss-arena.jpg" alt="Rhythm Void Hexatron boss fight showing the boss health bar, neon boss shapes, score, combo, best score, and ability button." width="1600" height="1000" loading="lazy" decoding="async">
           </div>
@@ -950,6 +1016,7 @@ footer{
         </figure>
 
         <figure class="shot rise">
+          <p class="shot__tag">03 · Run Results</p>
           <div class="shot__frame">
             <img src="shots/run-results.jpg" alt="Rhythm Void run results screen showing S plus grade, score, max combo, stage, accuracy, bosses defeated, and Copy Result button." width="1600" height="1000" loading="lazy" decoding="async">
           </div>
@@ -978,11 +1045,11 @@ footer{
       <p class="lede">Rhythm Void is in active playtest. Bug reports, difficulty spikes, and "this boss feels unfair" notes are all useful.</p>
 
       <div class="contact">
-        <a class="card rise" style="--accent:var(--cyan)" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20feedback">
+        <a class="card rise" style="--accent:var(--c1)" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20feedback">
           <h3>Email the playtest</h3>
           <p>playrhythmvoid@gmail.com — tell me what happened, which stage you were on, and what device you were playing on.</p>
         </a>
-        <a class="card rise" style="--accent:var(--magenta)" href="/play/" data-event="play_free_click" data-location="feedback_card">
+        <a class="card rise" style="--accent:var(--c2)" href="/play/" data-event="play_free_click" data-location="feedback_card">
           <h3>Play the latest build</h3>
           <p>Always the current version — refresh to pick up new fixes and balance changes.</p>
         </a>
@@ -1059,12 +1126,15 @@ footer{
 
   /* ---------- signature: live pulse ring ---------- */
   var canvas = document.getElementById("pulse"),
+      hudCombo = document.getElementById("hudCombo"),
+      hudLast  = document.getElementById("hudLast"),
+      hudBest  = document.getElementById("hudBest"),
       stage  = document.getElementById("stage"),
       verdict= document.getElementById("verdict"),
       ctx    = canvas.getContext("2d"),
       size = 0, cx = 0, cy = 0, maxR = 0, targetR = 0,
       DUR = 1700, start = performance.now(),
-      judged = false, combo = 0, flash = 0, flashHue = "#eafcff",
+      judged = false, combo = 0, bestCombo = 0, flash = 0, flashHue = "#f7fbff",
       running = false, raf = 0;
 
   function resize(){
@@ -1106,27 +1176,27 @@ footer{
     /* ambient ring */
     ctx.save();
     ctx.setLineDash([4, 12]);
-    ring(maxR * 1.02, "#8b5cff", 1, .45, 8);
+    ring(maxR * 1.02, "#7dff68", 1, .45, 8);
     ctx.restore();
 
     /* target ring */
-    ring(targetR, "#ff2fb9", 2.5, .95, 16);
-    ring(targetR - 7, "#ff2fb9", 1, .28, 0);
+    ring(targetR, "#ff2bd6", 2.5, .95, 16);
+    ring(targetR - 7, "#ff2bd6", 1, .28, 0);
 
     /* core */
     ctx.beginPath();
     ctx.arc(cx, cy, size * 0.045, 0, Math.PI * 2);
-    ctx.fillStyle = "#eafcff";
-    ctx.shadowColor = "#22e9ff";
+    ctx.fillStyle = "#f7fbff";
+    ctx.shadowColor = "#00f5ff";
     ctx.shadowBlur = 22;
     ctx.fill();
     ctx.shadowBlur = 0;
 
     /* incoming ring */
     var r = currentR(now);
-    if (r < targetR * 0.35 && !judged){ judged = true; combo = 0; }
+    if (r < targetR * 0.35 && !judged){ judged = true; combo = 0; hud("Miss"); }
     if (r <= 1){ start = now; judged = false; }
-    ring(r, "#22e9ff", 3, judged ? .3 : 1, 20);
+    ring(r, "#00f5ff", 3, judged ? .3 : 1, 20);
 
     /* hit shockwave */
     if (flash > 0){
@@ -1145,7 +1215,20 @@ footer{
     if (running) raf = requestAnimationFrame(draw);
   }
 
+  /* Mirror the judgement into the HUD panels. Same values the canvas uses,
+     so the readout is live rather than decorative. */
+  function hud(text){
+    if (combo > bestCombo) bestCombo = combo;
+    if (hudCombo) hudCombo.textContent = combo;
+    if (hudBest)  hudBest.textContent  = bestCombo;
+    if (hudLast){
+      hudLast.textContent = text;
+      hudLast.setAttribute("data-j", text.toLowerCase());
+    }
+  }
+
   function say(text, color){
+    hud(text);
     verdict.textContent = text;
     verdict.style.color = color;
     verdict.classList.remove("show");
@@ -1159,14 +1242,14 @@ footer{
     var d = Math.abs(currentR(performance.now()) - targetR);
     judged = true;
     if (d < size * 0.028){
-      combo++; flash = 1; flashHue = "#eafcff";
-      say("Perfect", "#eafcff");
+      combo++; flash = 1; flashHue = "#f7fbff";
+      say("Perfect", "#f7fbff");
     } else if (d < size * 0.07){
-      combo++; flash = .7; flashHue = "#22e9ff";
-      say("Good", "#22e9ff");
+      combo++; flash = .7; flashHue = "#00f5ff";
+      say("Good", "#00f5ff");
     } else {
       combo = 0;
-      say("Miss", "#ff2fb9");
+      say("Miss", "#ff2bd6");
     }
   }
 
