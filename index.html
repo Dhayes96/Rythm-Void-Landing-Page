@@ -537,8 +537,8 @@ kbd{
 .shot{margin:0}
 .shot__frame{
   position:relative;
-  aspect-ratio:16/10;
-  border:1px dashed rgba(140,170,255,.3);
+  aspect-ratio:var(--shot-ratio,16/10);
+  border:1px solid var(--line);
   border-radius:var(--r);
   background:
     radial-gradient(circle at 50% 42%,rgba(34,233,255,.14),transparent 62%),
@@ -551,27 +551,6 @@ kbd{
   gap:8px;
   padding:18px;
   overflow:hidden;
-}
-.shot__slot{
-  font-family:var(--display);
-  font-size:1.6rem;
-  letter-spacing:.1em;
-  color:var(--cyan);
-  line-height:1;
-  text-shadow:0 0 18px rgba(34,233,255,.6);
-}
-.shot__what{
-  font-family:var(--display);
-  font-size:.8rem;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:rgba(205,214,244,.82);
-}
-.shot__spec{
-  font-size:.72rem;
-  letter-spacing:.06em;
-  color:var(--dim);
-  font-family:var(--display);
 }
 .shot__frame img{
   position:absolute;
@@ -940,60 +919,42 @@ footer{
       <h2 id="shots-h">See it in motion</h2>
 
       <!-- ===================================================================
-           HOW TO REPLACE A SCREENSHOT
+           SCREENSHOTS
 
-           Each frame below contains two things:
-             a) an img tag that is commented out, pre-filled with alt text,
-                dimensions and lazy loading
-             b) three placeholder paragraphs, wrapped between two marker
-                comments labelled SLOT and /SLOT
+           Files live in /shots/ at the site root. To swap one out, replace the
+           file and keep the same name, or point src at the new filename.
 
-           To swap in a real image:
-             1. Uncomment the img tag and point its src at your file.
-             2. Delete the three placeholder paragraphs and both SLOT markers.
-             3. Leave width and height on the img so the layout does not
-                jump while the image loads.
+           width/height are the image's intrinsic pixel size. They reserve the
+           right space before the file loads, so the page does not jump. If you
+           export at a different size, update these two numbers to match.
 
-           Recommended: 1600x1000 (16:10), JPG or WebP, under ~250 KB each.
+           The frames crop rather than stretch (object-fit: cover), so an image
+           that is not 16:10 will be centre-cropped instead of distorted. If
+           these are portrait phone captures, change --shot-ratio in the .shot
+           CSS above from 16/10 to 9/16 and the frames become phone-shaped.
            =================================================================== -->
       <div class="shots">
 
         <figure class="shot rise">
           <div class="shot__frame">
-            <!-- <img src="shots/ring-combo.jpg" alt="Rhythm Void gameplay: a cyan ring shrinking onto the magenta target with a combo counter" width="1600" height="1000" loading="lazy" decoding="async"> -->
-            <!-- SLOT -->
-            <p class="shot__slot">01</p>
-            <p class="shot__what">Ring &amp; combo</p>
-            <p class="shot__spec">1600 × 1000 · 16:10</p>
-            <!-- /SLOT -->
+            <img src="shots/ring-combo.jpg" alt="Rhythm Void gameplay showing glowing neon rings, a Perfect hit, Combo Fever, score, best score, and energy bar." width="1600" height="1000" loading="lazy" decoding="async">
           </div>
-          <figcaption>A mid-run moment — ring, target, energy bar, combo climbing.</figcaption>
+          <figcaption>Build streaks, trigger Combo Fever, and keep the run alive with perfect timing.</figcaption>
         </figure>
 
         <figure class="shot rise">
           <div class="shot__frame">
-            <!-- <img src="shots/boss-arena.jpg" alt="Rhythm Void boss fight arena" width="1600" height="1000" loading="lazy" decoding="async"> -->
-            <!-- SLOT -->
-            <p class="shot__slot">02</p>
-            <p class="shot__what">Boss arena</p>
-            <p class="shot__spec">1600 × 1000 · 16:10</p>
-            <!-- /SLOT -->
+            <img src="shots/boss-arena.jpg" alt="Rhythm Void Hexatron boss fight showing the boss health bar, neon boss shapes, score, combo, best score, and ability button." width="1600" height="1000" loading="lazy" decoding="async">
           </div>
-          <figcaption>Pick your loudest boss — this is the shot people screenshot back.</figcaption>
+          <figcaption>Face bosses, read their patterns, and capture their cores.</figcaption>
         </figure>
 
         <figure class="shot rise">
           <div class="shot__frame">
-            <!-- <img src="shots/run-results.jpg" alt="Rhythm Void end of run results screen showing score, stage and accuracy" width="1600" height="1000" loading="lazy" decoding="async"> -->
-            <!-- SLOT -->
-            <p class="shot__slot">03</p>
-            <p class="shot__what">Run results</p>
-            <p class="shot__spec">1600 × 1000 · 16:10</p>
-            <!-- /SLOT -->
+            <img src="shots/run-results.jpg" alt="Rhythm Void run results screen showing S plus grade, score, max combo, stage, accuracy, bosses defeated, and Copy Result button." width="1600" height="1000" loading="lazy" decoding="async">
           </div>
-          <figcaption>The shareable end screen: score, stage, accuracy, bosses defeated.</figcaption>
+          <figcaption>Every run ends with score, grade, accuracy, max combo, stage reached, and a shareable result.</figcaption>
         </figure>
-
       </div>
     </div>
   </section>
