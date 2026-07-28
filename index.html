@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RLSPQWTDPK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-RLSPQWTDPK');
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
@@ -10,21 +20,17 @@
 <meta name="theme-color" content="#05060F">
 
 <!-- ===================================================================
-     ANALYTICS — PASTE SNIPPET HERE
+     ANALYTICS — GA4 installed (G-RLSPQWTDPK), see the Google tag above.
 
-     Paste your GA4 or GTM snippet directly below this comment, before
-     </head>. Nothing else needs changing: a delegated listener at the
-     bottom of this file already forwards every tagged click to whichever
-     of the two you install.
+     Custom events, sent by the delegated listener at the bottom of this
+     file. Both carry `location` and `page_path`:
 
-     Events that will start reporting immediately:
-       play_free_click   — 6 buttons, each with its own data-location
-                           (hero, how_to_play, cta_band, feedback_card,
-                            footer, sticky_dock)
-       feedback_click    — the public beta feedback CTA
+       play_free_click     — 7 links: hero, how_to_play, cta_band,
+                             feedback_card, footer, sticky_dock
+       contact_email_click — the beta feedback CTA and the email card
 
-     No IDs are hardcoded anywhere. Until a snippet is pasted here, the
-     listener is a no-op and the site makes zero third-party requests.
+     The Measurement ID appears exactly once per page, in the Google tag.
+     To change it, update the two occurrences in that snippet.
      =================================================================== -->
 
 
@@ -1064,11 +1070,11 @@ footer{
       <p class="lede">Public Beta — feedback helps shape the game. Bug reports, difficulty spikes, and "this boss feels unfair" notes all feed straight back into what ships next.</p>
 
       <div class="hero__actions">
-        <a class="btn btn--play" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback" data-event="feedback_click" data-location="feedback_cta">Send beta feedback</a>
+        <a class="btn btn--play" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback" data-event="contact_email_click" data-location="feedback_cta">Send beta feedback</a>
       </div>
 
       <div class="contact">
-        <a class="card rise" style="--accent:var(--c1)" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback">
+        <a class="card rise" style="--accent:var(--c1)" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback" data-event="contact_email_click" data-location="feedback_email_card">
           <h3>Email the playtest</h3>
           <p>playrhythmvoid@gmail.com — tell me what happened, which stage you were on, and what device you were playing on.</p>
         </a>
@@ -1117,17 +1123,24 @@ footer{
      until one exists. One delegated listener, so links added in future are
      covered without touching this code.
 
-     To switch analytics on, add your provider's snippet to <head>. GA4 and GTM
-     each expose one of the two globals checked below. */
+     GA4 is installed in <head>, so window.gtag exists and the first branch
+     runs. The dataLayer branch is kept as a fallback for GTM. */
   document.addEventListener("click", function (e) {
     var el = e.target.closest("[data-event]");
     if (!el) return;
     var name = el.getAttribute("data-event");
     var where = el.getAttribute("data-location") || "unknown";
     if (typeof window.gtag === "function") {
-      window.gtag("event", name, { location: where });
+      window.gtag("event", name, {
+        location: where,
+        page_path: location.pathname
+      });
     } else if (Array.isArray(window.dataLayer)) {
-      window.dataLayer.push({ event: name, location: where });
+      window.dataLayer.push({
+        event: name,
+        location: where,
+        page_path: location.pathname
+      });
     }
   }, { passive: true });
 
