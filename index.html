@@ -10,6 +10,25 @@
 <meta name="theme-color" content="#05060F">
 
 <!-- ===================================================================
+     ANALYTICS — PASTE SNIPPET HERE
+
+     Paste your GA4 or GTM snippet directly below this comment, before
+     </head>. Nothing else needs changing: a delegated listener at the
+     bottom of this file already forwards every tagged click to whichever
+     of the two you install.
+
+     Events that will start reporting immediately:
+       play_free_click   — 6 buttons, each with its own data-location
+                           (hero, how_to_play, cta_band, feedback_card,
+                            footer, sticky_dock)
+       feedback_click    — the public beta feedback CTA
+
+     No IDs are hardcoded anywhere. Until a snippet is pasted here, the
+     listener is a no-op and the site makes zero third-party requests.
+     =================================================================== -->
+
+
+<!-- ===================================================================
      RHYTHM VOID — URL REFERENCE
 
      1. LANDING PAGE URL (live)
@@ -718,7 +737,7 @@ footer{
   <header class="hero">
     <div class="wrap hero__grid">
       <div>
-        <p class="hero__tag">Browser arcade · Free to play</p>
+        <p class="hero__tag">Public Beta · Free in your browser</p>
         <h1>Rhythm<br>Void</h1>
         <p class="hero__sub">A rhythm arcade game where every tap keeps you alive.</p>
         <p class="hero__copy">Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best.</p>
@@ -1040,12 +1059,16 @@ footer{
   <!-- ========================== 9. CONTACT ========================== -->
   <section class="band band--tight" id="feedback" aria-labelledby="feedback-h">
     <div class="wrap">
-      <p class="eyebrow">Playtest</p>
-      <h2 id="feedback-h">Send playtest feedback</h2>
-      <p class="lede">Rhythm Void is in active playtest. Bug reports, difficulty spikes, and "this boss feels unfair" notes are all useful.</p>
+      <p class="eyebrow">Public Beta</p>
+      <h2 id="feedback-h">Send public beta feedback</h2>
+      <p class="lede">Public Beta — feedback helps shape the game. Bug reports, difficulty spikes, and "this boss feels unfair" notes all feed straight back into what ships next.</p>
+
+      <div class="hero__actions">
+        <a class="btn btn--play" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback" data-event="feedback_click" data-location="feedback_cta">Send beta feedback</a>
+      </div>
 
       <div class="contact">
-        <a class="card rise" style="--accent:var(--c1)" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20feedback">
+        <a class="card rise" style="--accent:var(--c1)" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback">
           <h3>Email the playtest</h3>
           <p>playrhythmvoid@gmail.com — tell me what happened, which stage you were on, and what device you were playing on.</p>
         </a>
