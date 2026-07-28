@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RLSPQWTDPK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-RLSPQWTDPK');
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
@@ -351,7 +361,7 @@ footer{
     </div>
 
     <p style="margin-top:26px">Or copy the address directly:
-    <a href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback">playrhythmvoid@gmail.com</a></p>
+    <a href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback" data-event="contact_email_click" data-location="contact_inline">playrhythmvoid@gmail.com</a></p>
 
     <p><a href="/">Back to the Rhythm Void home page</a></p>
   </div>
@@ -387,9 +397,16 @@ footer{
     var name = el.getAttribute("data-event");
     var where = el.getAttribute("data-location") || "unknown";
     if (typeof window.gtag === "function") {
-      window.gtag("event", name, { location: where });
+      window.gtag("event", name, {
+        location: where,
+        page_path: location.pathname
+      });
     } else if (Array.isArray(window.dataLayer)) {
-      window.dataLayer.push({ event: name, location: where });
+      window.dataLayer.push({
+        event: name,
+        location: where,
+        page_path: location.pathname
+      });
     }
   }, { passive: true });
 })();
