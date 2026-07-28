@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RLSPQWTDPK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-RLSPQWTDPK');
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
@@ -359,9 +369,14 @@ footer{
     delete it.</p>
 
     <h2>Analytics</h2>
-    <p>If analytics is added later, it may collect basic anonymous usage
-    information such as page views, device and browser type, and clicks. This kind
-    of information is aggregated and is not used to identify individual players.</p>
+    <p>This site uses Google Analytics 4 to collect basic anonymous usage
+    information such as page views, device and browser type, and which buttons are
+    clicked. This information is aggregated and is not used to identify individual
+    players. It tells us which pages people reach and whether they find the game,
+    nothing more.</p>
+    <p>Google may set cookies on your device as part of this. You can block them in
+    your browser settings, or use a tracker-blocking extension, and the game will
+    work exactly the same.</p>
 
     <h2>Contact</h2>
     <p>Questions about privacy can be sent to
@@ -404,9 +419,16 @@ footer{
     var name = el.getAttribute("data-event");
     var where = el.getAttribute("data-location") || "unknown";
     if (typeof window.gtag === "function") {
-      window.gtag("event", name, { location: where });
+      window.gtag("event", name, {
+        location: where,
+        page_path: location.pathname
+      });
     } else if (Array.isArray(window.dataLayer)) {
-      window.dataLayer.push({ event: name, location: where });
+      window.dataLayer.push({
+        event: name,
+        location: where,
+        page_path: location.pathname
+      });
     }
   }, { passive: true });
 })();
