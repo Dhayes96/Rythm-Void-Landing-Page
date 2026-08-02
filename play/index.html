@@ -1,6 +1,39 @@
 <!DOCTYPE html>
+<!-- ===================================================================
+     RHYTHM VOID — game build
+
+     For portal submissions, copy this file as index.html at the root of
+     the platform ZIP.
+
+     It is otherwise fully self-contained: no external assets, no build
+     step. Every icon is a data URI and the PWA manifest is generated as a
+     Blob at runtime, so the ZIP needs nothing but this single file. The
+     manifest derives its start_url from location, so the game works from
+     a site root or from a subdirectory.
+
+     ONE EXCEPTION for portal builds: the Google tag below is the only
+     external request this file makes. Many portals forbid third-party
+     analytics, and offline players will not reach it. Delete the Google
+     tag block from <head> for portal ZIPs — nothing else depends on it
+     and gameplay is unaffected.
+
+     One thing to check per portal: SHARE_URL below points at
+     https://playrhythmvoid.com/play/ and is what gets pasted into shared
+     results. If a portal requires links to stay on their domain, change
+     that one constant.
+     =================================================================== -->
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RLSPQWTDPK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-RLSPQWTDPK');
+</script>
+
   <meta charset="UTF-8" />
   <!-- viewport-fit=cover for iPhone notch safe areas; user-scalable=no + maximum-scale to block pinch zoom -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -473,6 +506,12 @@
       color: var(--white); opacity: 0.4; text-decoration: none;
     }
     .feedback-link:hover, .feedback-link:focus-visible { opacity: 0.7; text-decoration: underline; }
+
+    /* Helper text under a settings slider */
+    .slider-help {
+      margin-top: 6px; font-size: 11px; line-height: 1.4;
+      opacity: 0.45; letter-spacing: 0.01em;
+    }
 
     /* Version line under the Help section in Settings */
     .settings-version {
@@ -967,6 +1006,11 @@
           <div class="slider-head"><span>Music Volume</span><span id="musicVolLabel">68%</span></div>
           <input type="range" min="0" max="100" step="1" value="68" id="musicVolSlider" class="neon-slider" aria-label="Music volume">
         </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>Audio Offset</span><span id="audioOffsetLabel">0 ms</span></div>
+          <input type="range" min="-200" max="200" step="10" value="0" id="audioOffsetSlider" class="neon-slider" aria-label="Audio offset in milliseconds">
+          <div class="slider-help">Adjust if hits feel early or late compared to the music.</div>
+        </div>
         <label class="toggle-row"><span>Hit sounds</span><input type="checkbox" class="toggle" id="sfxToggle"></label>
         <label class="toggle-row"><span>Vibration</span><input type="checkbox" class="toggle" id="hapticToggle"></label>
       </div>
@@ -1039,7 +1083,7 @@
         <button class="btn ghost" id="copyResultBtn">Copy Result</button>
         <button class="btn ghost" id="overMenuBtn">Menu</button>
       </div>
-      <a class="feedback-link" id="feedbackLink" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Playtest%20Feedback">Send Feedback</a>
+      <a class="feedback-link" id="feedbackLink" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback">Send Public Beta Feedback</a>
     </div>
   </div>
 
@@ -1068,7 +1112,61 @@
 
   // ================= 0. META (version / debug / analytics / PWA) =================
 
-  const VERSION = 'v3.8';
+  const VERSION = 'v0.1.1';
+
+  /* ===================================================================
+     v0.1.1 ANONYMOUS TELEMETRY
+
+     Milestone events only. Deliberately NOT collected: tap-by-tap timing,
+     replays, player names, or anything that could identify a person. Every
+     value below is either a coarse bucket or a setting the player chose.
+
+     Fails silently and completely: if gtag is absent, blocked by an ad
+     blocker, or throws, track() returns without touching gameplay. Nothing
+     in the game reads a return value from it.
+     =================================================================== */
+  function platformType() {
+    try {
+      const ua = navigator.userAgent || '';
+      const touch = (navigator.maxTouchPoints || 0) > 1;
+      if (/iPad|Tablet/i.test(ua) || (/Macintosh/.test(ua) && touch)) return 'tablet';
+      if (/Mobi|Android|iPhone|iPod/i.test(ua)) return 'mobile';
+      return 'desktop';
+    } catch { return 'unknown'; }
+  }
+
+  // Coarse buckets keep individual runs unidentifiable and keep GA4
+  // cardinality low enough to actually be readable.
+  function scoreBucket(v) {
+    v = Number(v) || 0;
+    if (v < 1000) return '0-1k';
+    if (v < 5000) return '1k-5k';
+    if (v < 15000) return '5k-15k';
+    if (v < 40000) return '15k-40k';
+    if (v < 100000) return '40k-100k';
+    return '100k+';
+  }
+  function durationBucket(sec) {
+    sec = Number(sec) || 0;
+    if (sec < 15) return '0-15s';
+    if (sec < 45) return '15-45s';
+    if (sec < 120) return '45s-2m';
+    if (sec < 300) return '2-5m';
+    if (sec < 600) return '5-10m';
+    return '10m+';
+  }
+  function offsetBucket(ms) {
+    ms = Number(ms) || 0;
+    if (ms === 0) return '0';
+    const s = ms < 0 ? '-' : '+';
+    const a = Math.abs(ms);
+    if (a <= 30) return s + '1-30';
+    if (a <= 60) return s + '31-60';
+    if (a <= 120) return s + '61-120';
+    return s + '121-200';
+  }
+
+
 
   // Debug flag. When false, trackEvent() stays silent. Flip to true (or append
   // ?debug to the URL) to see playtest events in the console.
@@ -1077,11 +1175,22 @@
   // Lightweight, dependency-free analytics hook. For the MVP it only logs (when
   // DEBUG). The single call site makes it trivial to later forward events to a
   // real endpoint without hunting through the codebase.
+  /* The game already fired trackEvent() at 23 internal points as a local
+     debug no-op. v0.1.1 forwards it to GA4 — but only for the names on this
+     allow-list. Everything else stays local, so no internal event can start
+     leaving the device by accident just because someone adds a call site.
+     Anything not listed here is never sent. */
+  const GA_EVENTS = [
+    'run_start', 'run_end', 'stage_milestone',
+    'boss_reached', 'settings_audio_offset_changed'
+  ];
   function trackEvent(name, data = {}) {
     try {
       if (DEBUG) console.log('[event]', name, data);
-      // Future: POST to an analytics endpoint here. Intentionally a no-op now.
-    } catch {}
+      if (GA_EVENTS.indexOf(name) === -1) return;          // local only
+      if (typeof window.gtag !== 'function') return;        // blocked / absent
+      window.gtag('event', name, data);
+    } catch { /* telemetry must never affect play */ }
   }
 
   // Register an inline Web App Manifest via a Blob URL — gives Android's
@@ -1193,11 +1302,15 @@
   const STAGE_TABLE = [
     null, // stages are 1-indexed
     { hits: 0,   bpmAdd: 0,   win: 1.25, move: 0, density: 0.10, lead: 1.42, drainMul: 0.82, tapZone: 0    },
-    { hits: 6,   bpmAdd: 5,   win: 1.14, move: 4, density: 0.15, lead: 1.34, drainMul: 0.96, tapZone: 2.4  },
-    { hits: 16,  bpmAdd: 11,  win: 1.04, move: 3, density: 0.25, lead: 1.26, drainMul: 1.05, tapZone: 2.4  },
-    { hits: 30,  bpmAdd: 16,  win: 0.98, move: 3, density: 0.38, lead: 1.18, drainMul: 1.12, tapZone: 2.2  },
-    { hits: 48,  bpmAdd: 21,  win: 0.95, move: 3, density: 0.46, lead: 1.12, drainMul: 1.18, tapZone: 1.9  },
-    { hits: 70,  bpmAdd: 27,  win: 0.93, move: 2, density: 0.54, lead: 1.07, drainMul: 1.24, tapZone: 1.9  },
+    // v0.1.1: stage 2 was the sharpest jump in the game — tempo +5, windows
+    // 9% tighter and drain +17% all landed at once, six hits in. Softened, and
+    // stages 3-6 eased to match so no new cliff appears further along. Stage 7+
+    // is untouched, so the late game is exactly as demanding as before.
+    { hits: 8,   bpmAdd: 3,   win: 1.20, move: 4, density: 0.13, lead: 1.38, drainMul: 0.88, tapZone: 2.4  },
+    { hits: 20,  bpmAdd: 8,   win: 1.10, move: 3, density: 0.21, lead: 1.30, drainMul: 0.98, tapZone: 2.4  },
+    { hits: 34,  bpmAdd: 13,  win: 1.02, move: 3, density: 0.33, lead: 1.22, drainMul: 1.06, tapZone: 2.2  },
+    { hits: 50,  bpmAdd: 19,  win: 0.97, move: 3, density: 0.43, lead: 1.14, drainMul: 1.14, tapZone: 1.9  },
+    { hits: 72,  bpmAdd: 25,  win: 0.93, move: 2, density: 0.51, lead: 1.08, drainMul: 1.22, tapZone: 1.9  },
     { hits: 96,  bpmAdd: 32,  win: 0.91, move: 2, density: 0.60, lead: 1.03, drainMul: 1.28, tapZone: 1.9  },
     { hits: 126, bpmAdd: 36,  win: 0.90, move: 2, density: 0.64, lead: 1.00, drainMul: 1.32, tapZone: 1.9  },
     { hits: 160, bpmAdd: 39,  win: 0.89, move: 2, density: 0.68, lead: 0.98, drainMul: 1.35, tapZone: 1.9  },
@@ -1582,7 +1695,7 @@
     doomCleared: false,
     planetCleared: false,
     architectCleared: false,
-    settings: { music: true, musicVolume: 68, sfx: true, haptics: true, tapMode: 'target', musicVibe: 'cyberBounce', autoMatchVibe: true, environmentDetail: 'full' }
+    settings: { music: true, musicVolume: 68, sfx: true, haptics: true, tapMode: 'target', musicVibe: 'cyberBounce', autoMatchVibe: true, environmentDetail: 'full', audioOffsetMs: 0 }
   });
 
   const ABILITY_IDS = ['none', 'hexSaw', 'triLaser', 'prismGuard', 'eclipseRealm'];
@@ -1667,7 +1780,25 @@
         const boss = ABILITY_UNLOCK_BOSS[s.equippedAbility];
         if (!boss || !s.bossUnlocks[boss]) s.equippedAbility = 'none';
       }
-      if (!['off', 'low', 'full'].includes(s.settings.environmentDetail)) s.settings.environmentDetail = 'full';
+      const hadEnvPref = ['off', 'low', 'full'].includes(s.settings.environmentDetail);
+      if (!hadEnvPref) s.settings.environmentDetail = 'full';
+      // v0.1.1 audio offset: clamp to the slider's range and snap to its step.
+      // Older saves have no field at all, so Number(undefined) -> NaN -> 0.
+      // v0.1.1: a brand-new player on a phone, or anyone asking for reduced
+      // motion, starts on the lighter effects profile. Only ever applied when
+      // the save had no stored preference — an existing choice is never
+      // overwritten, and the setting stays fully changeable in Settings.
+      if (!hadEnvPref) {
+        let light = false;
+        try {
+          light = /Mobi|Android|iPhone|iPod/i.test(navigator.userAgent || '') ||
+                  (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        } catch {}
+        if (light) s.settings.environmentDetail = 'low';
+      }
+      let _ao = Math.round(Number(s.settings.audioOffsetMs) / 10) * 10;
+      if (!isFinite(_ao)) _ao = 0;
+      s.settings.audioOffsetMs = Math.max(-200, Math.min(200, _ao));
       // v2.4: Tap Modes simplified to target/anywhere. Old 'hybrid' → 'target'.
       if (s.settings.tapMode === 'hybrid' || !['target', 'anywhere'].includes(s.settings.tapMode)) s.settings.tapMode = 'target';
       // Rebrand migration: write the adopted save under the new key once.
@@ -1763,6 +1894,54 @@
   // If anything fails, the game keeps running silently.
 
   let audioCtx = null, masterGain = null, musicGain = null, sfxGain = null, menuGain = null, masterLimiter = null, musicLimiter = null;
+
+  /* ===================================================================
+     v0.1.1 GAMEPLAY CLOCK
+
+     Music is scheduled against audioCtx.currentTime, but gameplay used to
+     run on performance.now(). Those are two independent clocks — the audio
+     clock is driven by the sound card's sample counter, the frame clock by
+     the system timer. They tick at slightly different rates, so over a run
+     the rings and the beat slide apart. That is exactly what players meant
+     by "not synced closely enough to the music".
+
+     clockNow() is now the single gameplay clock. It advances on the AUDIO
+     clock whenever audio is running, so a ring's arrival can no longer
+     drift from the beat it was scheduled against. It falls back to the
+     frame clock before audio is unlocked or while the context is suspended.
+
+     It accumulates deltas rather than returning a raw reading, so:
+       - it is monotonic and never jumps when the clock source switches
+       - it is safe to call many times per frame (each call adds only the
+         time elapsed since the previous call)
+       - a suspended context contributes no time, which is what the existing
+         hidden-tab freeze already wants
+     =================================================================== */
+  let _clkSec = 0, _clkLastAudio = 0, _clkLastPerf = 0, _clkReady = false;
+  function clockNow() {
+    const perf = performance.now() / 1000;
+    const useAudio = !!(audioCtx && audioCtx.state === 'running');
+    if (!_clkReady) {
+      _clkSec = perf;
+      _clkLastPerf = perf;
+      _clkLastAudio = useAudio ? audioCtx.currentTime : 0;
+      _clkReady = true;
+      return _clkSec;
+    }
+    const perfDelta = Math.max(0, Math.min(1, perf - _clkLastPerf));
+    if (useAudio) {
+      const a = audioCtx.currentTime;
+      let d = a - _clkLastAudio;
+      if (!(d >= 0) || d > 1) d = perfDelta;   // context suspended/reset/jumped
+      _clkSec += d;
+      _clkLastAudio = a;
+    } else {
+      _clkSec += perfDelta;
+      if (audioCtx) _clkLastAudio = audioCtx.currentTime;
+    }
+    _clkLastPerf = perf;
+    return _clkSec;
+  }
   // v1.7 volume model: the slider (0–100) scales gameplay music; menu music is
   // a ratio of that. The slider's "100%" maps to MUSIC_VOL_100, and the default
   // slider position is 68%.
@@ -2518,7 +2697,7 @@
   // a plain time-based wobble when the music is off.
   function musicBeatPhase() {
     if (!music.on || !audioCtx || !music.active) {
-      return ((performance.now() / 1000) * 1.6) % 1;
+      return ((performance.now() / 1000) * 1.6) % 1; // no audio yet: frame clock is fine here
     }
     const stepDur = (60 / Math.max(1, bpm)) / 4;
     const since = Math.max(0, audioCtx.currentTime - (music.nextStepTime - stepDur));
@@ -3204,7 +3383,7 @@
       if (immediate) {
         music.nextStepTime = audioCtx.currentTime + 0.06; // play right now
       } else {
-        const nowGame = performance.now() / 1000 - startTime;
+        const nowGame = clockNow() - startTime;
         music.nextStepTime = audioCtx.currentTime + Math.max(0.06, gameBeatT - nowGame);
       }
       music.timer = setInterval(musicTick, 25);
@@ -3494,12 +3673,28 @@
       secret: null,
       maxCombo: maxCombo || 0,
       accuracy: judged ? Math.round(((rs.perfects || 0) / judged) * 100) : 0,
-      durationMs: Math.max(0, Math.round((performance.now() / 1000 - startTime) * 1000)),
+      durationMs: Math.max(0, Math.round((clockNow() - startTime) * 1000)),
       name: playerName(),
       plate: ensurePlayer().plate || 'none',
       ts: Date.now(),
       v: VERSION
     }, extra || {});
+  }
+
+  /* One hook for every way a run can end. Called from makeRunRecord's callers
+     via commitRunRecord, so the normal death path and the secret-gauntlet path
+     both report without duplicating the call. Buckets only — no raw score, no
+     name, no per-tap data. */
+  function reportRunEnd(rec) {
+    if (!rec) return;
+    trackEvent('run_end', {
+      difficulty: rec.difficulty || 'arcade',
+      stage_reached: Math.max(1, rec.stage || 1),
+      score_bucket: scoreBucket(rec.score),
+      duration_bucket: durationBucket((rec.durationMs || 0) / 1000),
+      bosses_defeated: rec.bosses || 0,
+      platform_type: platformType()
+    });
   }
 
   // Basic plausibility only — enough to drop obviously broken records, not a
@@ -3520,6 +3715,7 @@
 
   // Commit a finished run into the local boards, rolling week/day as needed.
   function commitRunRecord(rec) {
+    reportRunEnd(rec);   // every run reports, including implausible ones
     if (!isPlausibleRun(rec)) { trackEvent('record_rejected', { score: rec && rec.score }); return { rejected: true }; }
     const R = save.records;
     const wk = weekKey(), dk = todayKey();
@@ -3661,6 +3857,12 @@
     $('sfxToggle').checked = save.settings.sfx;
     $('hapticToggle').checked = save.settings.haptics;
     const vol = clampVol(save.settings.musicVolume);
+    const ao = $('audioOffsetSlider');
+    if (ao) {
+      ao.value = save.settings.audioOffsetMs || 0;
+      const aol = $('audioOffsetLabel');
+      if (aol) aol.textContent = fmtOffset(save.settings.audioOffsetMs || 0);
+    }
     const vs = $('musicVolSlider');
     if (vs) { vs.value = vol; vs.style.backgroundSize = vol + '% 100%'; }
     const vl = $('musicVolLabel');
@@ -3765,6 +3967,19 @@
       }
     } catch {}
   }
+
+  function fmtOffset(ms) { return (ms > 0 ? '+' : '') + ms + ' ms'; }
+
+  $('audioOffsetSlider').addEventListener('input', (e) => {
+    const ms = Math.max(-200, Math.min(200, Math.round(Number(e.target.value) / 10) * 10));
+    save.settings.audioOffsetMs = ms;
+    const l = $('audioOffsetLabel'); if (l) l.textContent = fmtOffset(ms);
+    persist();
+  });
+  // Report only on release, so dragging the slider does not fire an event per step.
+  $('audioOffsetSlider').addEventListener('change', (e) => {
+    trackEvent('settings_audio_offset_changed', { offset_ms_bucket: offsetBucket(save.settings.audioOffsetMs || 0) });
+  });
 
   $('musicVolSlider').addEventListener('input', (e) => {
     const pct = clampVol(e.target.value);
@@ -4117,6 +4332,8 @@
   let coreCapture = null;        // {t0, dur, color} energy-stream effect
 
   // stage / progression within a run
+  const MILESTONE_STAGES = [2, 5, 8, 10, 20];
+  let _milestonesSent = {};
   let stage = 1, hitsTotal = 0, hitsSinceMove = 0, nextMoveAt = Infinity, moveArmed = false, moveCount = 0;
 
   /* ---- RUN STATS -----------------------------------------------------------
@@ -4155,6 +4372,16 @@
   }
 
   // Current timing windows: base × difficulty scale × stage scale.
+  /* v0.1.1 audio offset, in seconds. Positive shifts the moment the game
+     judges a ring LATER, which is what a player wants when their taps keep
+     registering as late. Applied to every judgement comparison — the tap
+     test, the auto-miss test and the note sweep — so a note can never be
+     retired before the offset window has actually passed. */
+  function audioOffset() {
+    const ms = (save && save.settings && save.settings.audioOffsetMs) || 0;
+    return ms / 1000;
+  }
+
   function windows() {
     let w = diff.winScale * stageParams(stage).win;
     // Boss battles: keep the timing windows fair rather than inheriting the
@@ -4356,12 +4583,18 @@
     stopMenuMusic(0.25); // hand off from title loop to the gameplay track
 
     state = 'playing';
-    startTime = performance.now() / 1000;
+    startTime = clockNow();
     lastNow = startTime;
     notes = []; particles = []; sparks = []; shockwaves = [];
     score = 0; combo = 0; maxCombo = 0; perfects = 0;
     comboTier = 0; levelPauseUntil = 0; bgPulse = 0; lastPatternName = '';
     runStats = freshRunStats();
+    trackEvent('run_start', {
+      difficulty: save.settings && save.difficulty ? save.difficulty : (save.difficulty || 'arcade'),
+      tap_mode: (save.settings && save.settings.tapMode) || 'target',
+      platform_type: platformType()
+    });
+    _milestonesSent = {};
     energy = 100;
     stage = 1; hitsTotal = 0; hitsSinceMove = 0; moveCount = 0; moveArmed = false;
     nextMoveAt = Infinity; // stage 1 = no movement
@@ -4892,7 +5125,7 @@
 
   // Pause gameplay ~1s to announce the new level, then resume cleanly.
   function beginLevelPause() {
-    const nowT = performance.now() / 1000 - startTime;
+    const nowT = clockNow() - startTime;
     const dur = 1.0; // seconds (within the 800–1200ms spec)
     state = 'levelup';
     levelPauseUntil = nowT + dur;
@@ -4938,7 +5171,18 @@
     hitsTotal++;
     hitsSinceMove++;
     const ns = stageFor(hitsTotal, diff);
-    if (ns > stage) stageUp(ns);
+    if (ns > stage) {
+      stageUp(ns);
+      // Only the listed stages, and only once each per run.
+      if (MILESTONE_STAGES.indexOf(stage) !== -1 && !_milestonesSent[stage]) {
+        _milestonesSent[stage] = 1;
+        trackEvent('stage_milestone', {
+          stage: stage,
+          difficulty: save.difficulty || 'arcade',
+          platform_type: platformType()
+        });
+      }
+    }
     // stageUp may have started a boss encounter — if so, stop here so we don't
     // re-arm a target move that would freeze note-spawning during the fight.
     if (bossActive) return;
@@ -4963,6 +5207,11 @@
   function startBossEncounter(st) {
     const def = BOSSES[st];
     if (!def) return;
+    trackEvent('boss_reached', {
+      boss_name: def.id || def.name || 'unknown',
+      stage: st,
+      difficulty: save.difficulty || 'arcade'
+    });
     bossActive = true;
     activeBoss = def;
     bossMaxHealth = bossHpFor(def);
@@ -4974,7 +5223,7 @@
     bossPerfectStreak = 0;
     bossAnim = 0;
 
-    const nowT = performance.now() / 1000 - startTime;
+    const nowT = clockNow() - startTime;
     state = 'bossIntro';
     bossIntroUntil = nowT + 1.5;   // ~1.5s intro
     notes = [];                    // clear field for a clean entrance
@@ -5014,7 +5263,7 @@
     bossPerfectStreak = 0;
     bossAnim = 0;
 
-    const nowT = performance.now() / 1000 - startTime;
+    const nowT = clockNow() - startTime;
     state = 'bossIntro';
     bossIntroUntil = nowT + 1.8;
     notes = [];
@@ -5110,7 +5359,7 @@
   function defeatBoss() {
     const def = activeBoss;
     state = 'bossDefeat';
-    const nowT = performance.now() / 1000 - startTime;
+    const nowT = clockNow() - startTime;
     if (DEBUG) { const elapsedSeconds = (nowT - bossFightStart).toFixed(1); console.log('[boss duration]', def.name, elapsedSeconds); }
     bossDefeatUntil = nowT + 1.7;
     notes = [];
@@ -5184,7 +5433,7 @@
       bossRewardLabelEl.textContent = (ab ? ab.name.toUpperCase() : '') + ' UNLOCKED';
       bossRewardValueEl.textContent = 'Boss Core: ' + def.name.charAt(0) + def.name.slice(1).toLowerCase();
       // core-capture FX: energy streams from the boss into the player's target
-      coreCapture = { t0: performance.now() / 1000 - startTime, dur: 1.4, color: def.colors[0] };
+      coreCapture = { t0: clockNow() - startTime, dur: 1.4, color: def.colors[0] };
     } else {
       bossDefeatNameEl.textContent = 'BOSS DEFEATED';
       bossRewardLabelEl.textContent = 'BONUS';
@@ -5331,7 +5580,7 @@
       if (tune && tune.pause) {
         abilityStatusText.innerHTML = label + ' <span class="on">HOLD TO EXIT</span>';
       } else {
-        const left = Math.max(0, Math.ceil(abUntil - (performance.now() / 1000 - startTime)));
+        const left = Math.max(0, Math.ceil(abUntil - (clockNow() - startTime)));
         abilityStatusText.innerHTML = label + ' <span class="on">' + left + 's</span>';
       }
     } else if (abReady) {
@@ -5414,7 +5663,7 @@
     if (!canActivateAbility()) return;
     const tune = abTuning();
     const meta = ABILITIES[abilityId];
-    const nowT = performance.now() / 1000 - startTime;
+    const nowT = clockNow() - startTime;
     abReady = false;
     abActive = true;
     abUntil = nowT + tune.dur;
@@ -5448,7 +5697,7 @@
 
   // ---- Prism Guard: shard blast on expiry ----
   function prismBlast() {
-    const t = performance.now() / 1000 - startTime;
+    const t = clockNow() - startTime;
     const radius = Math.min(W, H) * 0.42;          // medium radius, not full screen
     shockwaves.push({ x: tgt.x, y: tgt.y, r: targetR, alpha: 1, speed: 900, width: 9, color: '#b06bff' });
     createBurst(tgt.x, tgt.y, '#b06bff', 46, 1.5);
@@ -5491,7 +5740,7 @@
   function exitRealm() {
     // Re-anchor the beat clock so rings resume cleanly instead of dumping a
     // backlog the instant reality snaps back.
-    const nowT = performance.now() / 1000 - startTime;
+    const nowT = clockNow() - startTime;
     notes = [];
     nextBeatTime = nowT + leadTime + 0.35;
     realmMusicOn = false;
@@ -5791,7 +6040,38 @@
     showToast.timer = setTimeout(() => toast.classList.remove('show'), 240);
   }
 
+  /* ===================================================================
+     v0.1.1 VISUAL CLARITY BUDGET
+
+     Feedback: "the game became visually polluted later". Particle bursts
+     are per-event, so deep stages fire many at once and the target zone
+     disappears under its own effects. Two limits now apply:
+
+       fxScale()      — from stage 6 the per-burst count tapers to 55%,
+                        and the 'low'/'off' detail settings scale further.
+       MAX_PARTICLES  — a hard ceiling on live particles. Once reached,
+                        new bursts are skipped rather than queued, so a
+                        dense phase can never spiral.
+
+     Both only reduce particle COUNT. Colours, motion and the Combo Fever
+     look are untouched, so the arcade energy survives — there is simply
+     less of it stacked on top of the ring you need to read.
+     =================================================================== */
+  const MAX_PARTICLES = 220;
+  function fxScale() {
+    const env = (save.settings && save.settings.environmentDetail) || 'full';
+    let s = env === 'off' ? 0.35 : env === 'low' ? 0.6 : 1;
+    // Deep stages: taper the per-event spend so the target stays readable.
+    if (stage >= 6) s *= 0.55;
+    else if (stage >= 4) s *= 0.8;
+    return s;
+  }
+
   function createBurst(x, y, color, count = 24, power = 1) {
+    count = Math.max(3, Math.round(count * fxScale()));
+    const room = MAX_PARTICLES - particles.length;
+    if (room <= 0) return;
+    if (count > room) count = room;
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const speed = (70 + Math.random() * 240) * power;
@@ -5861,12 +6141,12 @@
 
     if (runStats) runStats.taps++;   // every scoring attempt (pointer/touch/key)
 
-    const t = nowMs / 1000 - startTime;
+    const t = clockNow() - startTime;
     const win = windows();
     let bestNote = null, bestDiff = Infinity;
     for (const note of notes) {
       if (note.hit || note.missed) continue;
-      const d = Math.abs(t - note.hitTime);
+      const d = Math.abs(t - (note.hitTime + audioOffset()));
       if (d < bestDiff) { bestDiff = d; bestNote = note; }
     }
 
@@ -6067,7 +6347,7 @@
     // suspend timer must be armed exactly once or it would be reset forever
     // and never actually fire.
     if (_hiddenAt) return;
-    _hiddenAt = performance.now() / 1000;
+    _hiddenAt = clockNow();
     // Scheduling stops immediately (see the ticks), but up to ~140ms is already
     // queued and pads/drones can ring for seconds. Suspend just after that tail
     // so it fades out naturally instead of being cut mid-note.
@@ -6084,13 +6364,13 @@
   // lifecycle events (or the loop itself) notices we're back first.
   function creditAwayTime() {
     if (!_hiddenAt) return 0;
-    const away = performance.now() / 1000 - _hiddenAt;
+    const away = clockNow() - _hiddenAt;
     _hiddenAt = 0;
     if (away > 0.15 && inRunState()) {
       startTime += away;
       nextBeatTime += away;
     }
-    lastNow = performance.now() / 1000;
+    lastNow = clockNow();
     return away;
   }
   function onPageVisible() {
@@ -6117,6 +6397,15 @@
   }, { passive: false });
 
   // ================= 13. RENDER =================
+
+  /* Shockwaves are cheap individually but stack during boss phases and
+     combo milestones, and each one is a full stroked arc with a glow. Cap
+     the live count so heavy moments cannot pile them up. */
+  const MAX_SHOCKWAVES = 14;
+  function trimEffects() {
+    if (shockwaves.length > MAX_SHOCKWAVES) shockwaves.splice(0, shockwaves.length - MAX_SHOCKWAVES);
+    if (particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES);
+  }
 
   function update(dt, t) {
     bossAnim += dt;
@@ -6187,7 +6476,7 @@
       const okWin = windows().ok;
       for (const note of notes) {
         // a note only counts as missed after its FULL OK window has passed
-        if (!note.hit && !note.missed && t - note.hitTime > okWin + 0.02) {
+        if (!note.hit && !note.missed && t - (note.hitTime + audioOffset()) > okWin + 0.02) {
           note.missed = true;
           if (!guardBlock('miss')) {
             if (runStats) runStats.misses++;
@@ -6208,7 +6497,7 @@
           }
         }
       }
-      notes = notes.filter(n => (t - n.hitTime < okWin + 0.45) && !n.hit);
+      notes = notes.filter(n => (t - (n.hitTime + audioOffset()) < okWin + 0.45) && !n.hit);
     } else {
       updateTarget(t);
     }
@@ -6226,6 +6515,7 @@
       p2.vy *= 0.986;
     }
     particles = particles.filter(p2 => p2.life > 0);
+    trimEffects();
 
     for (const w of shockwaves) {
       w.r += w.speed * dt;
@@ -7799,7 +8089,7 @@
   // ================= 14. LOOP (single rAF loop) =================
 
   function loop() {
-    const nowAbs = performance.now() / 1000;
+    const nowAbs = clockNow();
     // While the page is hidden the run is frozen outright. Browsers vary in
     // whether they pause rAF, throttle it, or keep it going, so we don't rely
     // on that: nothing updates or draws until the player is actually back.
