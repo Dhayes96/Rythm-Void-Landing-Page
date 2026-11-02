@@ -5027,7 +5027,7 @@
         $('mapperMeta').textContent = 'exported · copied';
       };
       try {
-        if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+        if (clipboardAllowed()) {
           navigator.clipboard.writeText(json).then(done).catch(manual);
         } else {
           manual();
@@ -6214,6 +6214,18 @@
     return lines.join('\n');
   }
 
+  // True unless the Clipboard API is unavailable or the page's permissions policy forbids it
+  // (e.g. a portal iframe without allow="clipboard-write"). Calling it there logs a console
+  // "Permissions policy violation" before failing, so we go straight to the fallback instead.
+  // Browsers without the policy API (Firefox, Safari) behave exactly as before.
+  function clipboardAllowed() {
+    try {
+      const pp = document.permissionsPolicy || document.featurePolicy;
+      if (pp && typeof pp.allowsFeature === 'function' && !pp.allowsFeature('clipboard-write')) return false;
+    } catch {}
+    return !!(navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext);
+  }
+
   // Copy Result — Clipboard API with a graceful fallback for older/insecure
   // contexts (execCommand) and a final fallback that shows the text to copy.
   function copyResult(btnId, origLabel) {
@@ -6226,7 +6238,7 @@
     };
     trackEvent('copy_result', {});
     sfxSuccess();
-    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+    if (clipboardAllowed()) {
       navigator.clipboard.writeText(text).then(() => flash('Copied ✓')).catch(() => legacyCopy(text, flash));
     } else {
       legacyCopy(text, flash);
@@ -7848,6 +7860,17 @@
   // Any real interaction is the most reliable moment to resume on mobile.
   window.addEventListener('pointerdown', () => tryResumeAudio(true), { passive: true, capture: true });
   window.addEventListener('keydown', () => tryResumeAudio(true), { capture: true });
+  // iOS / CrazyGames: AudioContext.resume() is only honoured inside a touchend or click
+  // gesture (docs.crazygames.com technical requirements). Idempotent: does nothing while
+  // audio is running, never starts music by itself, and never un-pauses a paused run
+  // (only the Resume button does that).
+  function gestureResumeAudio() {
+    if (!audioCtx || document.hidden || audioCtx.state === 'running') return;
+    kickAudio();                 // silent buffer + resume(), inside the gesture
+    tryResumeAudio(true);
+  }
+  window.addEventListener('touchend', gestureResumeAudio, { passive: true, capture: true });
+  window.addEventListener('click', gestureResumeAudio, { passive: true, capture: true });
 
   // Block iOS gesture zoom + rubber-band scroll during play.
   document.addEventListener('gesturestart', (e) => e.preventDefault());
@@ -9631,9 +9654,13 @@
     primeMenuAudio();
     window.removeEventListener('pointerdown', firstGesture, true);
     window.removeEventListener('keydown', firstGesture, true);
+    window.removeEventListener('touchend', firstGesture, true);
+    window.removeEventListener('click', firstGesture, true);
   }
   window.addEventListener('pointerdown', firstGesture, true);
   window.addEventListener('keydown', firstGesture, true);
+  window.addEventListener('touchend', firstGesture, true);   // iOS: unlock must happen in touchend/click
+  window.addEventListener('click', firstGesture, true);
 
   refreshMenu();
   showScreen('menu');
