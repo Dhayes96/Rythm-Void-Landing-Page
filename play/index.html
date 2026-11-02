@@ -294,6 +294,31 @@
     @keyframes feverShift { to { background-position: 300% 0; } }
     @keyframes pcShine { 0% { left: -60%; } 55%,100% { left: 130%; } }
 
+    /* ===== PAUSE (Phase 2 · T6) ===== */
+    #pauseBtn {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 74px);
+      right: calc(env(safe-area-inset-right, 0px) + 16px);
+      z-index: 8; display: none; align-items: center; justify-content: center; gap: 5px;
+      width: 44px; height: 44px; border-radius: 50%; padding: 0;
+      background: rgba(10,10,24,0.7); border: 2px solid rgba(255,255,255,0.25);
+      cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    #pauseBtn.show { display: flex; }
+    #pauseBtn i { display: block; width: 5px; height: 16px; border-radius: 2px; background: #fff; box-shadow: 0 0 8px var(--glow1); }
+    #pauseOverlay {
+      position: fixed; inset: 0; z-index: 40; display: none;
+      flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      background: rgba(4,4,14,0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      text-align: center; padding: 24px;
+    }
+    #pauseOverlay.show { display: flex; }
+    #pauseTitle { font-size: 30px; font-weight: 950; letter-spacing: 0.2em; text-shadow: 0 0 18px var(--glow1); }
+    #pauseMsg { font-size: 13px; opacity: 0.75; min-height: 1.2em; max-width: 320px; }
+    #pauseCount { display: none; font-size: 84px; font-weight: 950; line-height: 1; color: var(--c3); text-shadow: 0 0 28px var(--c3); }
+    #pauseOverlay.counting #pauseCount { display: block; }
+    #pauseOverlay.counting #pauseResumeBtn, #pauseOverlay.counting #pauseTitle { display: none; }
+
     /* Non-blocking audio unlock hint */
     #audioHint {
       position: fixed;
@@ -891,6 +916,15 @@
   <div id="feverBanner">Combo Fever ×2</div>
   <div id="toast"></div>
   <div id="audioHint">Tap once for audio</div>
+
+  <!-- PAUSE (Phase 2 · T6): upper-right button + overlay with a 3-2-1 resume -->
+  <button id="pauseBtn" aria-label="Pause"><i></i><i></i></button>
+  <div id="pauseOverlay" role="dialog" aria-label="Paused">
+    <div id="pauseTitle">PAUSED</div>
+    <div id="pauseMsg"></div>
+    <div id="pauseCount">3</div>
+    <button class="btn" id="pauseResumeBtn">Resume</button>
+  </div>
 
   <!-- Level-up announcement: a brief centered banner during the levelup pause -->
   <div id="levelUp">
@@ -2211,7 +2245,11 @@
         try {
           audioCtx.addEventListener('statechange', () => {
             if (audioCtx.state === 'running') reanchorAudioClocks();
-            else if (!document.hidden) tryResumeAudio(true);
+            else {
+              // T6: audio taken away mid-run (call, Siri, Control Centre, BT drop)
+              if (_runAudioSeen) pauseGame('audio');
+              if (!document.hidden) tryResumeAudio(true);
+            }
           });
         } catch {}
       }
@@ -2271,10 +2309,25 @@
   // After a suspension the audio clock has moved on without us. Re-anchor both
   // sequencers to "now" while KEEPING their musical position, so the song
   // continues from where it stopped instead of restarting or dumping a backlog.
+  // T6a (RV-03): move a sequencer forward by WHOLE 16th steps, so the music keeps
+  // its grid phase. Rings already planned on the old grid stay on the beat; the
+  // skipped steps are simply not played (exactly like a dropped step).
+  // Returns the number of steps skipped.
+  function reanchorMusicGrid(seq, minAt) {
+    if (!seq || !(seq.nextStepTime < minAt)) return 0;
+    const stepDur = (60 / Math.max(1, bpm)) / 4;
+    const k = Math.ceil((minAt - seq.nextStepTime) / stepDur);
+    const oldStep = seq.step;
+    seq.nextStepTime += k * stepDur;
+    seq.step = (oldStep + k) % 16;
+    seq.bar = (seq.bar + Math.floor((oldStep + k) / 16)) % 4;
+    return k;
+  }
+
   function reanchorAudioClocks() {
     if (!audioCtx || audioCtx.state !== 'running') return;
     const at = audioCtx.currentTime + 0.06;
-    if (music && music.nextStepTime < at) music.nextStepTime = at;
+    if (music) reanchorMusicGrid(music, at);          // T6a: whole steps, grid phase kept
     if (menuMusic && menuMusic.nextStepTime < at) menuMusic.nextStepTime = at;
     checkAudioUnlocked();
   }
@@ -2847,6 +2900,8 @@
     if (!music.on || !audioCtx || !music.active) {
       return ((performance.now() / 1000) * 1.6) % 1; // no audio yet: frame clock is fine here
     }
+    // RV-04: follow the audible step, not the scheduler's lookahead position.
+    if (Conductor.ready()) { const s = Conductor.stepAt(); return (((s / 4) % 1) + 1) % 1; }
     const stepDur = (60 / Math.max(1, bpm)) / 4;
     const since = Math.max(0, audioCtx.currentTime - (music.nextStepTime - stepDur));
     const sub = Math.min(0.999, since / Math.max(0.0001, stepDur));
@@ -2895,10 +2950,8 @@
     beatDur()  { return 60 / Math.max(1, bpm); },        // quarter note, seconds
     stepDur()  { return (60 / Math.max(1, bpm)) / 4; },  // 16th note, seconds
     beatsPerBar() { return 4; },
-    swing() {
-      const prof = (music.active && music.active.prof) || null;
-      return (prof && prof.swing) || 0;
-    },
+    // RV-02: same source as personalityProfile().swing, which the sequencer uses.
+    swing() { return currentVibeChar().swing || 0; },
 
     /* Gameplay time and the audio clock advance together (clockNow() is
        audio-locked as of v0.1.1) but have different origins. This is the
@@ -3249,7 +3302,8 @@
       for (let i = 0; i < steps.length; i++) {
         const abs = base + bar * 16 + steps[i];
         const d = Math.abs(abs - s);
-        if (d < bestD) { bestD = d; best = abs; }
+        // deterministic tie-break: on an exact tie the earlier step wins
+        if (d < bestD - 1e-6 || (Math.abs(d - bestD) <= 1e-6 && abs < best)) { bestD = d; best = abs; }
       }
     }
     if (best === null || bestD > 2.01) return null;   // > half a beat away
@@ -4004,6 +4058,7 @@
     // each tick would queue another ~140ms of lookahead — which is exactly the
     // stray beat you'd hear after switching away. Schedule nothing while hidden.
     if (document.hidden) return;
+    if (state === 'paused') return;            // T6: silent and unscheduled while paused
     if (audioCtx.state !== 'running') { tryResumeAudio(); return; }  // recover, don't give up
     stepBossMusicMix();                        // ease the boss crossfade each tick
     // If the clock slips (context started late on mobile, or a heavy frame
@@ -4011,8 +4066,13 @@
     // position. Jumping back to step 0 restarted the bar mid-phrase, which is
     // what made dense phases sound choppy rather than merely late.
     const stepDur0 = (60 / bpm) / 4;
+    // startMusic() may schedule the first step up to ~1-2 s ahead; anything beyond 4 s means the
+    // audio timeline restarted (iOS after a lock), which would leave the music silent.
+    if (music.nextStepTime > audioCtx.currentTime + 4) {
+      music.nextStepTime = audioCtx.currentTime + 0.04;   // fresh anchor
+    }
     if (music.nextStepTime < audioCtx.currentTime - stepDur0 * 2) {
-      music.nextStepTime = audioCtx.currentTime + 0.04;   // keep step/bar intact
+      reanchorMusicGrid(music, audioCtx.currentTime + 0.04);   // T6a: whole steps, grid phase kept
     }
     const ahead = audioCtx.currentTime + 0.14;
     let guard = 0;
@@ -5330,6 +5390,9 @@
   let comboTier = 0;           // highest COMBO_MILESTONES index reached this run
 
   let notes = [], particles = [], sparks = [], shockwaves = [];
+  // RV-08: time of the last note scheduleNotes() spawned, so the min-gap check
+  // carries across pattern boundaries. Reset wherever the field is cleared.
+  let lastScheduledHitT = -Infinity;
   let score = 0, combo = 0, maxCombo = 0, perfects = 0;
   let energy = 100, bpm = 74, nextBeatTime = 0, beatIndex = 0, leadTime = 1.4;
   let pulse = 0, shake = 0;
@@ -5663,7 +5726,9 @@
     state = 'playing';
     startTime = clockNow();
     lastNow = startTime;
-    notes = []; particles = []; sparks = []; shockwaves = [];
+    _runAudioSeen = false; pauseInfo = null;
+    pauseOverlayEl.classList.remove('show', 'counting');
+    notes = []; lastScheduledHitT = -Infinity; particles = []; sparks = []; shockwaves = [];
     score = 0; combo = 0; maxCombo = 0; perfects = 0;
     comboTier = 0; levelPauseUntil = 0; bgPulse = 0; lastPatternName = '';
     runStats = freshRunStats();
@@ -6201,6 +6266,12 @@
     beginLevelPause();
   }
 
+  // RV-01: the BPM for the current stage. Tempo changes are discrete and only
+  // happen while the field is empty (level banner, boss entry/exit).
+  function stageBpmTarget() {
+    return Math.min(diff.maxBpm, diff.startBpm + stageParams(stage).bpmAdd * diff.bpmRamp);
+  }
+
   // Pause gameplay ~1s to announce the new level, then resume cleanly.
   function beginLevelPause() {
     const nowT = clockNow() - startTime;
@@ -6210,11 +6281,12 @@
 
     // Clear any in-flight notes so the player resumes on a fresh pattern —
     // no lingering ring can be "missed" across the pause.
-    notes = [];
+    notes = []; lastScheduledHitT = -Infinity;
     moveArmed = false;
+    bpm = stageBpmTarget();   // RV-01 (option B): tempo steps under the LEVEL banner
 
     // Fill + show the announcement.
-    const targetBpm = Math.round(Math.min(diff.maxBpm, diff.startBpm + stageParams(stage).bpmAdd * diff.bpmRamp));
+    const targetBpm = Math.round(stageBpmTarget());
     luLevelEl.textContent = 'LEVEL ' + stage;
     const mech = stageMechanicHint(stage);
     luMechEl.textContent = mech;
@@ -6238,6 +6310,7 @@
     state = 'playing';
     // Resume the timeline just ahead of "now" so the first new note gets a
     // full approach and lands cleanly on the beat grid; realign the music.
+    bpm = stageBpmTarget();   // RV-01: exact tempo before any note is planned
     nextBeatTime = nowT + leadTime + 0.2;
     realignMusic(nextBeatTime);
   }
@@ -6304,7 +6377,7 @@
     const nowT = clockNow() - startTime;
     state = 'bossIntro';
     bossIntroUntil = nowT + 1.5;   // ~1.5s intro
-    notes = [];                    // clear field for a clean entrance
+    notes = []; lastScheduledHitT = -Infinity;                    // clear field for a clean entrance
     moveArmed = false;
 
     // boss music arrangement (crossfade over the SAME vibe — no restart)
@@ -6344,7 +6417,7 @@
     const nowT = clockNow() - startTime;
     state = 'bossIntro';
     bossIntroUntil = nowT + 1.8;
-    notes = [];
+    notes = []; lastScheduledHitT = -Infinity;
     moveArmed = false;
 
     applyBossMusic(true);
@@ -6369,6 +6442,7 @@
     state = 'bossBattle';
     moveArmed = false;            // ensure note-spawning is never frozen
     hitsSinceMove = 0;
+    bpm = stageBpmTarget();       // RV-01: exact tempo before any note is planned
     nextBeatTime = nowT + leadTime + 0.2;
     bossFightStart = nowT;       // for the debug duration log
     // note: music clock runs free; do not realign (keeps it seamless)
@@ -6440,7 +6514,7 @@
     const nowT = clockNow() - startTime;
     if (DEBUG) { const elapsedSeconds = (nowT - bossFightStart).toFixed(1); console.log('[boss duration]', def.name, elapsedSeconds); }
     bossDefeatUntil = nowT + 1.7;
-    notes = [];
+    notes = []; lastScheduledHitT = -Infinity;
 
     // energy reward (Eclipse Sovereign restores to full)
     energy = Math.min(100, def.energyReward >= 999 ? 100 : energy + def.energyReward);
@@ -6585,7 +6659,8 @@
     leadTime = Math.max(0.92, p.lead);
     nextMoveAt = p.move > 0 ? p.move + 1 : Infinity;
     hitsSinceMove = 0; moveArmed = false;
-    notes = [];
+    notes = []; lastScheduledHitT = -Infinity;
+    bpm = stageBpmTarget();   // RV-01: exact tempo before any note is planned
     nextBeatTime = nowT + leadTime + 0.2;
     // update stage fill
     const cur = stageHitsNeeded(stage, diff), nxt = stageHitsNeeded(stage + 1, diff);
@@ -6810,7 +6885,7 @@
   function enterRealm() {
     // No circles exist inside the realm — the field is swept clean on entry.
     // These are silent removals: no score, no combo, no misses.
-    notes = [];
+    notes = []; lastScheduledHitT = -Infinity;
     realmMusicOn = true;
     realmSnap = 0;
     bgPulse = 1;
@@ -6820,7 +6895,7 @@
     // Re-anchor the beat clock so rings resume cleanly instead of dumping a
     // backlog the instant reality snaps back.
     const nowT = clockNow() - startTime;
-    notes = [];
+    notes = []; lastScheduledHitT = -Infinity;
     nextBeatTime = nowT + leadTime + 0.35;
     realmMusicOn = false;
     realmSnap = 1;                                  // reality-snap effect
@@ -7080,14 +7155,15 @@
         const snapped = Conductor.quantize(nextBeatTime, 1);
         // Never snap backwards past the point where a note could still be
         // spawned with enough lead time to be readable.
-        if (snapped >= t + 0.05) nextBeatTime = snapped;
+        // RV-13: every ring, including the first, gets its full approach.
+        nextBeatTime = (snapped < t + leadTime) ? Conductor.getNextBeatTime(t + leadTime) : snapped;
       }
 
       const pat = chooseRhythmPattern(stage, runWasDaily ? 'arcade' : save.difficulty, combo, music.phaseIndex);
       // minimum readable spacing = a bit more than the OK window
       const minGap = Math.max(MIN_NOTE_GAP, windows().ok * 1.7);
 
-      let prevTime = -Infinity;
+      let prevTime = lastScheduledHitT;
       for (let i = 0; i < pat.offsets.length; i++) {
         let noteT = nextBeatTime + pat.offsets[i] * beat;
 
@@ -7109,15 +7185,16 @@
         /* If the active track swings its 16ths, the notes must swing with it
            or the offbeats sit fractionally ahead of the hats. */
         const sw = Conductor.swing();
-        if (sw && Conductor.ready()) {
-          const sixteenth = (pat.offsets[i] * 4) % 4;
-          if (Math.abs(sixteenth - 2) < 0.01) noteT += (beat / 4) * sw;
+        if (sw && Conductor.ready() && !BeatMap.active()) {     // charts already contain their swing
+          const landed = ((Math.round(Conductor.stepAt(noteT)) % 4) + 4) % 4;
+          if (landed === 2) noteT += Conductor.stepDur() * sw;
         }
         // Snapping can move a note earlier than the previous one; ordering
         // matters for the gap test, so compare against the running max.
         if (noteT - prevTime < minGap) continue; // drop notes that would crowd
         spawnNote(noteT, beatIndex);
         prevTime = noteT;
+        lastScheduledHitT = noteT;
         beatIndex++;
       }
       // Advance to the next pattern. Burst patterns leave built-in rest via span.
@@ -7449,6 +7526,10 @@
       if (e.code === 'Escape') { e.preventDefault(); Mapper.hide(); return; }
       return;                       // mapper swallows keys while open
     }
+    if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) {
+      if (inRunState()) { e.preventDefault(); pauseGame('button'); return; }
+      if (state === 'paused') { e.preventDefault(); requestResume(); return; }
+    }
     if (e.code === 'Space' || e.code === 'Enter') {
       if (state === 'playing' || state === 'bossBattle') {
         e.preventDefault();
@@ -7502,7 +7583,7 @@
     if (!_hiddenAt) return 0;
     const away = clockNow() - _hiddenAt;
     _hiddenAt = 0;
-    if (away > 0.15 && inRunState()) {
+    if (away > 0.15 && inRunState()) {   // not while paused: the pause credits its own time
       startTime += away;
       nextBeatTime += away;
     }
@@ -7515,11 +7596,199 @@
     creditAwayTime();
     reanchorAudioClocks();
   }
+  // ---- PAUSE / RESUME (Phase 2 · T6; design approved by Dennel 2026-11-01) ----
+  // One controller for every interruption: the pause button, a tab/app switch,
+  // focus loss, and the audio being taken away mid-run. While paused:
+  //   - game time is frozen (the pause is credited back to startTime on resume),
+  //   - in-flight rings are cleared with NO penalty (no miss, energy or combo loss),
+  //   - nothing is scheduled or judged, and the music bus is silenced.
+  // Resume (a tap, so iOS will start audio) runs a 3-2-1 countdown, then the music
+  // is re-anchored on whole steps and rings are re-planned on that grid, so audio
+  // and ring scheduling restart together. Every entry point is idempotent.
+  let pauseInfo = null;                 // { from, at, reason, countdownStart }
+  let _t6PauseCount = 0, _t6ResyncCount = 0;
+  let _runAudioSeen = false;            // audio has actually been live during this run
+  const PAUSE_COUNT_SEC = 0.8;          // seconds per countdown digit
+  const pauseBtnEl = document.getElementById('pauseBtn');
+  const pauseOverlayEl = document.getElementById('pauseOverlay');
+  const pauseMsgEl = document.getElementById('pauseMsg');
+  const pauseCountEl = document.getElementById('pauseCount');
+  const pauseResumeBtnEl = document.getElementById('pauseResumeBtn');
+  const PAUSE_REASON = {
+    button: '',
+    hidden: 'Paused while you were away.',
+    focus: 'Paused because the game lost focus.',
+    audio: 'Paused because the audio was interrupted.',
+  };
+  // iOS Safari can leave the context saying 'running' while its clock has stopped
+  // (Siri, and after the screen is locked and woken). The state never changes, so
+  // watch the clock itself: report a stall when currentTime hasn't moved for 1 s,
+  // or when a frame gap over 1 s shows the audio advanced < 30% of the wall clock.
+  // Conservative on purpose: some outputs (virtual/BT/low-power sinks) advance the
+  // clock in bursts, and a false pause mid-run is worse than a 1 s detection delay.
+  // The caller only acts once the clock has run smoothly for 1.5 s (audioClockArmed).
+  const AUDIO_STALL_MS = 1000;
+  let _acLastT = null, _acLastMove = 0, _acSmoothSince = 0;
+  function audioClockStalled() {
+    const p = performance.now();
+    if (!audioCtx || audioCtx.state !== 'running') { _acLastT = null; _acSmoothSince = 0; return false; }
+    const a = audioCtx.currentTime;
+    if (_acLastT === null) { _acLastT = a; _acLastMove = p; _acSmoothSince = p; return false; }
+    if (a !== _acLastT) {
+      const wallMs = p - _acLastMove, audMs = (a - _acLastT) * 1000;
+      _acLastT = a; _acLastMove = p;
+      if (wallMs > AUDIO_STALL_MS && audMs < wallMs * 0.3) { _acSmoothSince = p; return true; }
+      if (wallMs > 250) _acSmoothSince = p;           // a burst: restart the smooth-run timer
+      return false;
+    }
+    if (p - _acLastMove > AUDIO_STALL_MS) { _acSmoothSince = p; return true; }
+    return false;
+  }
+  function audioClockArmed() { return _acSmoothSince > 0 && performance.now() - _acSmoothSince > 1500; }
+  // Inside a user gesture: the standard iOS unlock (play a silent buffer) + resume.
+  function kickAudio() {
+    if (!audioCtx) return;
+    try {
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioCtx.createBuffer(1, 1, 22050);
+      src.connect(audioCtx.destination);
+      src.start(0);
+    } catch {}
+    try { audioCtx.resume(); } catch {}
+  }
+  // Resolves true once the context is running AND its clock is actually moving.
+  // If it says running but stays stuck, cycle the session (suspend → resume) up to twice.
+  function whenAudioAdvancing(timeoutMs) {
+    return new Promise((resolve) => {
+      if (!audioCtx) return resolve(false);
+      const t0 = performance.now();
+      let lastA = null, lastMove = t0, moves = 0, cycles = 0;
+      (function poll() {
+        if (!audioCtx) return resolve(false);
+        const now = performance.now();
+        if (audioCtx.state !== 'running') {
+          try { audioCtx.resume(); } catch {}
+        } else {
+          const a = audioCtx.currentTime;
+          if (lastA !== null && a > lastA) { if (++moves >= 2) return resolve(true); lastMove = now; }
+          lastA = a;
+          if (now - lastMove > 500 && cycles < 2) {
+            cycles++; lastMove = now;
+            try { audioCtx.suspend().then(() => audioCtx.resume()).catch(() => {}); } catch {}
+          }
+        }
+        if (now - t0 > timeoutMs) return resolve(false);
+        setTimeout(poll, 40);
+      })();
+    });
+  }
+  function setMusicPaused(on) {
+    if (!audioCtx || !musicGain) return;
+    try {
+      const now = audioCtx.currentTime;
+      musicGain.gain.cancelScheduledValues(now);
+      if (on) {
+        musicGain.gain.setValueAtTime(Math.max(0.0001, musicGain.gain.value), now);
+        musicGain.gain.setTargetAtTime(0.0001, now, 0.015);   // cut the queued tail fast
+      } else {
+        applyLiveMusicVolume();
+      }
+    } catch {}
+  }
+  function pauseGame(reason) {
+    if (!inRunState()) return false;    // idempotent: not in a run, or already paused
+    pauseInfo = { from: state, at: clockNow(), reason: reason || 'button', countdownStart: 0 };
+    state = 'paused';
+    _t6PauseCount++;
+    notes = []; lastScheduledHitT = -Infinity; moveArmed = false;   // cleared, no penalty
+    spaceDown = false;
+    setMusicPaused(true);
+    pauseMsgEl.textContent = PAUSE_REASON[pauseInfo.reason] || '';
+    pauseOverlayEl.classList.remove('counting');
+    pauseOverlayEl.classList.add('show');
+    return true;
+  }
+  function requestResume() {
+    if (state !== 'paused' || !pauseInfo || pauseInfo.countdownStart) return;
+    ensureAudio();
+    kickAudio();                        // inside the tap: iOS needs a user gesture
+    tryResumeAudio(true);
+    pauseInfo.countdownStart = -1;      // waiting for audio to come back
+    pauseMsgEl.textContent = 'Starting audio…';
+    whenAudioAdvancing(3000).then((ok) => {
+      if (state !== 'paused' || !pauseInfo) return;
+      if (!ok) {
+        pauseInfo.countdownStart = 0;
+        pauseMsgEl.textContent = 'Audio is unavailable right now. Tap Resume to try again.';
+        return;
+      }
+      reanchorAudioClocks();
+      pauseMsgEl.textContent = '';
+      pauseCountEl.textContent = '3';
+      pauseOverlayEl.classList.add('counting');
+      pauseInfo.countdownStart = performance.now();
+      try { tone(660, 0.05, 'sine', 0.03); } catch {}
+    });
+  }
+  // Called from the render loop every frame while paused.
+  function tickPause() {
+    if (!pauseInfo || !(pauseInfo.countdownStart > 0)) return;
+    const el = (performance.now() - pauseInfo.countdownStart) / 1000;
+    const n = 3 - Math.floor(el / PAUSE_COUNT_SEC);
+    if (n >= 1) {
+      if (pauseCountEl.textContent !== String(n)) {
+        pauseCountEl.textContent = String(n);
+        try { tone(660, 0.05, 'sine', 0.03); } catch {}
+      }
+    } else {
+      finishResume();
+    }
+  }
+  // Re-plan the field after an interruption: same pattern as beginLevelPause /
+  // endLevelPause. Notes are cleared with no penalty and the next ring gets a
+  // full approach on the (whole-step re-anchored) music grid.
+  function resyncRunAfterInterruption(nowT) {
+    notes = []; lastScheduledHitT = -Infinity;
+    nextBeatTime = nowT + leadTime + 0.2;
+    moveArmed = false;
+    _t6ResyncCount++;
+  }
+  function finishResume() {
+    const info = pauseInfo;
+    if (!info) return;
+    if (audioCtx && (audioCtx.state !== 'running' || audioClockStalled())) {
+      // audio dropped again during the countdown (e.g. Siri): stay paused
+      info.countdownStart = 0;
+      pauseOverlayEl.classList.remove('counting');
+      pauseMsgEl.textContent = PAUSE_REASON.audio;
+      return;
+    }
+    const now = clockNow();
+    startTime += now - info.at;         // game time was frozen for the whole pause
+    lastNow = now;
+    state = info.from;
+    pauseInfo = null;
+    pauseOverlayEl.classList.remove('show', 'counting');
+    if (audioCtx && audioCtx.state === 'running') {
+      const at = audioCtx.currentTime + 0.05;
+      // iOS can restart the audio timeline after a lock: a schedule far in the future
+      // would leave the music silent. Rings are re-planned below, so a fresh anchor is safe.
+      if (music.nextStepTime > at + 1) music.nextStepTime = at;
+      else reanchorMusicGrid(music, at);
+    }
+    _acLastT = null;                    // restart the stall tracker
+    setMusicPaused(false);
+    resyncRunAfterInterruption(now - startTime);
+    try { tone(990, 0.06, 'sine', 0.035); } catch {}
+  }
+  pauseBtnEl.addEventListener('click', (e) => { e.stopPropagation(); pauseGame('button'); });
+  pauseResumeBtnEl.addEventListener('click', (e) => { e.stopPropagation(); requestResume(); });
+
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) onPageHidden(); else onPageVisible();
+    if (document.hidden) { pauseGame('hidden'); onPageHidden(); } else onPageVisible();
   });
-  window.addEventListener('pagehide', onPageHidden);
-  window.addEventListener('blur', onPageHidden);
+  window.addEventListener('pagehide', () => { pauseGame('hidden'); onPageHidden(); });
+  window.addEventListener('blur', () => { pauseGame('focus'); onPageHidden(); });
   window.addEventListener('focus', onPageVisible);
   window.addEventListener('pageshow', onPageVisible);
   // Any real interaction is the most reliable moment to resume on mobile.
@@ -7562,10 +7831,10 @@
       if (t >= bossDefeatUntil) endBossEncounter(t);
     } else if (state === 'playing' || state === 'bossBattle') {
       const inBoss = (state === 'bossBattle');
-      // BPM eases toward the current stage target
+      // RV-01: no per-frame easing. Tempo is set discretely while the field is
+      // empty; this is only a safety net and is normally already equal.
       const p = stageParams(stage);
-      const bpmTarget = Math.min(diff.maxBpm, diff.startBpm + p.bpmAdd * diff.bpmRamp);
-      bpm += (bpmTarget - bpm) * Math.min(1, dt * 0.5);
+      bpm = stageBpmTarget();
 
       updateAbility(dt, t);
       // ECLIPSE REALM: the field freezes. Rings hold position by sliding their
@@ -9249,15 +9518,34 @@
     // whether they pause rAF, throttle it, or keep it going, so we don't rely
     // on that: nothing updates or draws until the player is actually back.
     if (document.hidden) {
+      pauseGame('hidden');
       onPageHidden();
       lastNow = nowAbs;
       requestAnimationFrame(loop);
       return;
     }
     creditAwayTime();
-    const inRun = (state === 'playing' || state === 'levelup' ||
+    // T6 audio watchdog: if the audio was live in this run and is now gone
+    // (some browsers skip 'statechange'), pause instead of playing on silently.
+    if (audioCtx) {
+      const armedBefore = audioClockArmed();          // judged on the history BEFORE this frame
+      const stalled = audioClockStalled();            // always called, so the tracker stays current
+      if (inRunState()) {
+        if (audioCtx.state === 'running') {
+          if (!stalled) _runAudioSeen = true;
+          else if (_runAudioSeen && armedBefore) pauseGame('audio');   // clock stopped (Siri)
+        } else if (_runAudioSeen) {
+          pauseGame('audio');                                          // state changed (call, BT)
+        }
+      }
+    }
+    const showPB = inRunState();
+    if (showPB !== pauseBtnEl.classList.contains('show')) pauseBtnEl.classList.toggle('show', showPB);
+    if (state === 'paused') tickPause();
+    const paused = (state === 'paused' && pauseInfo);
+    const inRun = paused || (state === 'playing' || state === 'levelup' ||
                    state === 'bossIntro' || state === 'bossBattle' || state === 'bossDefeat');
-    const t = inRun ? nowAbs - startTime : nowAbs;
+    const t = paused ? pauseInfo.at - startTime : (inRun ? nowAbs - startTime : nowAbs);
     const dt = Math.min(0.033, nowAbs - lastNow || 0.016);
     lastNow = nowAbs;
 
