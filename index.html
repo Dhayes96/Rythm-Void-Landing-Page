@@ -138,7 +138,7 @@ body{
 }
 
 /* ===================================================================
-   BACKGROUND \u2014 void, arena grid, neon arcs. Gradients only, no images.
+   BACKGROUND \u2014 void, halftone dots, neon arcs. Gradients only, no images.
    =================================================================== */
 body::before{
   content:"";
@@ -981,9 +981,11 @@ h3{font-style:italic}
       <h2 id="story-h">One tiny saucer vs. four grumpy robots</h2>
       <div class="strip">
         <figure class="panel rise" style="--accent:var(--c1)">
-          <p class="cap">Out past the last star, a net of light called <b>the Grid</b> keeps a thousand worlds safe. It runs on a song: <b>the Signal</b>.</p>
-          <div class="art"><svg viewBox="0 0 320 150" role="img" aria-label="Sleepy planets tucked under a glowing net of light">
-            <g fill="none" stroke="#5ef2ff" stroke-opacity="0.45" stroke-width="1.2"><path d="M0 50 Q160 0 320 50"/><path d="M0 78 Q160 28 320 78"/><path d="M0 106 Q160 56 320 106"/><path d="M40 0 L70 150 M100 0 L115 150 M160 0 L160 150 M220 0 L205 150 M280 0 L250 150"/></g>
+          <p class="cap">Out past the last star, a thousand sleepy little worlds float through the dark. Their lights run on a song: <b>the Signal</b>.</p>
+          <div class="art"><svg viewBox="0 0 320 150" role="img" aria-label="Sleepy planets drifting through space, with orbits and twinkling stars">
+            <g fill="none" stroke="#b45cff" stroke-opacity="0.4" stroke-width="1.2" stroke-dasharray="4 6"><ellipse cx="62" cy="114" rx="46" ry="11"/><ellipse cx="160" cy="114" rx="36" ry="9"/><ellipse cx="258" cy="112" rx="54" ry="13"/></g>
+            <g fill="#e8f6ff"><circle cx="18" cy="16" r="1.4"/><circle cx="70" cy="30" r="1"/><circle cx="198" cy="24" r="1.1"/><circle cx="246" cy="10" r="1.5"/><circle cx="304" cy="34" r="1.2"/><circle cx="150" cy="50" r="0.9"/><circle cx="36" cy="54" r="0.9"/></g>
+            <path d="M122 8 L123.5 13 L128 14 L123.5 15 L122 20 L120.5 15 L116 14 L120.5 13 Z" fill="#ffe14d"/>
             <use href="#cxPlanet" x="30" y="70" width="64" height="64"/><use href="#cxPlanet" x="134" y="80" width="52" height="52"/><use href="#cxPlanet" x="222" y="64" width="72" height="72"/>
             <text x="90" y="74" class="zzz">z</text><text x="98" y="62" class="zzz">z</text><text x="186" y="84" class="zzz">z</text><text x="290" y="64" class="zzz">z</text>
           </svg></div>
@@ -1123,7 +1125,7 @@ h3{font-style:italic}
         <div class="realm rise" style="--accent:#ff2b12">
           <svg viewBox="34 22 140 80" aria-hidden="true"><path d="M40 74 Q62 30 96 52 Q102 34 116 30 Q112 46 120 58 Q150 40 168 70 Q140 66 126 78 Q112 92 90 86 Q70 96 40 74 Z" fill="#1d0403" stroke="#ff2b12" stroke-width="1.4" stroke-opacity="0.7"/><circle cx="112" cy="46" r="2.4" fill="#ff7a1a"/><circle cx="118" cy="47" r="2" fill="#ff7a1a"/></svg>
           <p class="realm__lock" aria-hidden="true">???</p>
-          <p class="realm__label">Something old and hungry sleeps beneath the Grid.</p>
+          <p class="realm__label">Something old and hungry sleeps between the stars.</p>
         </div>
         <div class="realm rise" style="--accent:#5ef2ff">
           <svg viewBox="-40 -22 80 56" aria-hidden="true"><ellipse rx="24" ry="5" fill="#0b2230" stroke="#5ef2ff" stroke-width="1.4"/><path d="M-11 -2 A11 10 0 0 1 11 -2" fill="#0f3a48" stroke="#5ef2ff" stroke-width="1.2"/><path d="M-6 6 L6 6 L14 26 L-14 26 Z" fill="#5ef2ff" opacity="0.14"/></svg>
@@ -1133,7 +1135,7 @@ h3{font-style:italic}
         <div class="realm rise" style="--accent:#ffd23d">
           <svg viewBox="-36 -24 72 48" aria-hidden="true"><path d="M-22 0 Q0 -16 22 0 Q0 16 -22 0 Z" fill="#0d1430" stroke="#ffd23d" stroke-width="1.4"/><circle r="6" fill="#ffd23d"/><circle r="2.6" fill="#0d1430"/></svg>
           <p class="realm__lock" aria-hidden="true">???</p>
-          <p class="realm__label">And whoever built the Grid still keeps score.</p>
+          <p class="realm__label">And whoever wrote the Signal still keeps score.</p>
         </div>
       </div>
       <p class="lede" style="margin-top:22px">Each one hides its own world, its own boss and its own music. Beat it and the world is yours to keep.</p>
