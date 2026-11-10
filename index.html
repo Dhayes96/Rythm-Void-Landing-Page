@@ -731,11 +731,201 @@ footer{
   *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important}
 }
 
+/* ===================================================================
+   COMIC LAYER (v0.4) — the page now matches the game's comic, The Signal:
+   ink-bordered panels, halftone dots, yellow caption boxes, speech bubbles
+   and sound effects. The game's neon, HUD readouts and pill buttons stay.
+   =================================================================== */
+:root{ --ink:#15112a; --cap:#ffe14d; --paper:#f4f0ff; --panel-c:#141032; }
+body::after{
+  background-image:
+    repeating-radial-gradient(circle at 50% 30%, transparent 0 118px, rgba(0,245,255,.05) 118px 119px, transparent 119px 240px),
+    radial-gradient(rgba(255,255,255,.075) 1px, transparent 1.5px);
+  background-size:auto, 7px 7px;
+}
+/* captions: every eyebrow is a yellow comic caption box */
+.eyebrow{
+  display:inline-flex; width:auto; color:var(--ink); background:var(--cap);
+  border:2.5px solid var(--ink); box-shadow:3px 3px 0 var(--ink); padding:5px 11px;
+  font-size:10.5px; font-weight:950; text-shadow:none; transform:rotate(-1.2deg); margin-bottom:18px;
+}
+.eyebrow::after{display:none}
+h2{
+  font-style:italic; font-weight:1000; letter-spacing:.015em;
+  text-shadow:3px 3px 0 var(--c2), 6px 6px 0 #000, 0 0 22px rgba(0,245,255,.25);
+}
+h3{font-style:italic}
+.hero h1{
+  font-style:italic; font-weight:1000; letter-spacing:.02em;
+  -webkit-text-stroke:3px var(--ink);
+  text-shadow:5px 5px 0 var(--c2), 10px 10px 0 #000, 0 0 40px rgba(0,245,255,.45);
+}
+.hero__tag{
+  color:var(--ink); background:var(--cap); border:2.5px solid var(--ink); border-radius:3px;
+  box-shadow:3px 3px 0 var(--ink); transform:rotate(-1.5deg);
+}
+.hero__sub{
+  position:relative; display:inline-block; background:#fff; color:var(--ink);
+  border:3px solid var(--ink); border-radius:22px; padding:12px 18px; box-shadow:4px 4px 0 rgba(0,0,0,.6);
+  margin-top:26px;
+}
+.hero__sub::after{
+  content:""; position:absolute; left:34px; bottom:-14px;
+  border:11px solid transparent; border-top-color:var(--ink); border-bottom:0;
+}
+/* buttons: the game's neon pill, inked */
+.btn--play{ border:3px solid var(--ink); box-shadow:4px 4px 0 var(--ink), 0 0 26px var(--glow1), 0 0 44px var(--glow2); }
+.btn--play:hover,.btn--play:focus-visible{ box-shadow:6px 6px 0 var(--ink), 0 0 34px var(--glow1), 0 0 60px var(--glow2); }
+.btn--ghost{ color:var(--ink); background:#fff; border:3px solid var(--ink); box-shadow:4px 4px 0 rgba(0,0,0,.65); font-weight:950; }
+.btn--ghost:hover,.btn--ghost:focus-visible{ background:var(--cap); border-color:var(--ink); }
+/* panels: cards, bosses, controls, realms, shots and the CTA are comic panels */
+.card,.boss,.ctrl,.realm,.cta,.panel,.steps li{
+  border:3px solid var(--paper); border-radius:6px;
+  background:radial-gradient(rgba(255,255,255,.085) 1px, transparent 1.4px) 0 0/6px 6px, var(--panel-c);
+  box-shadow:5px 5px 0 rgba(0,0,0,.7), 0 0 26px -10px var(--accent, var(--c2));
+}
+.card:nth-child(odd),.boss:nth-child(odd),.ctrl:nth-child(odd),.realm:nth-child(odd),.panel:nth-child(odd){transform:rotate(-.6deg)}
+.card:nth-child(even),.boss:nth-child(even),.ctrl:nth-child(even),.realm:nth-child(even),.panel:nth-child(even){transform:rotate(.5deg)}
+.card:hover{transform:translateY(-4px) rotate(0deg); box-shadow:7px 7px 0 rgba(0,0,0,.7), 0 0 30px -6px var(--accent, var(--c1))}
+.boss:hover{transform:translateY(-3px) rotate(0deg); box-shadow:7px 7px 0 rgba(0,0,0,.7), 0 0 30px -6px var(--accent)}
+.card::before{height:4px}
+.card .card__tag{ color:var(--ink); background:var(--cap); border:2px solid var(--ink); border-radius:3px; opacity:1; box-shadow:2px 2px 0 var(--ink); }
+.card p{color:rgba(232,228,255,.82)}
+/* comic bits shared with the game: captions, bubbles, sound effects */
+.cap{ margin:0; background:var(--cap); color:var(--ink); font-weight:850; font-size:.9rem; line-height:1.38; padding:8px 12px; border-bottom:3px solid var(--ink); }
+.cap b{color:#b0127a; font-weight:950}
+.art{position:relative}
+.art.dark{background:#05040c}
+.art svg{display:block; width:100%; height:auto}
+.bub{ position:absolute; background:#fff; color:var(--ink); font-weight:950; font-size:12.5px; line-height:1.2; padding:5px 10px;
+  border:2.5px solid var(--ink); border-radius:14px; box-shadow:2px 2px 0 rgba(0,0,0,.45); white-space:nowrap; }
+.bub-s{font-size:10.5px; padding:4px 8px; white-space:normal; max-width:70%}
+.bub-l::after{ content:""; position:absolute; left:10px; bottom:-9px; border:7px solid transparent; border-top-color:var(--ink); border-bottom:0; }
+.sfx{ position:absolute; font-weight:1000; font-style:italic; font-size:clamp(18px,2.4vw,24px); letter-spacing:1px; color:var(--cap);
+  -webkit-text-stroke:1.4px var(--ink); text-shadow:2px 2px 0 var(--ink); transform:rotate(-8deg); pointer-events:none; }
+.sfx-g{color:var(--c3)}
+.zzz{font:italic 900 13px sans-serif; fill:#e8f6ff; opacity:.85}
+/* hero demo: the saucer sits on the target and bounces when you hit */
+.demo__stage{overflow:visible}
+.demo__ufo{ position:absolute; left:50%; top:50%; width:44%; aspect-ratio:124/88; transform:translate(-50%,-58%); pointer-events:none;
+  animation:hover 3.2s ease-in-out infinite; }
+.demo__ufo.bump{animation:bump .32s ease-out, hover 3.2s ease-in-out .32s infinite}
+@keyframes hover{0%,100%{transform:translate(-50%,-58%) rotate(-2deg)}50%{transform:translate(-50%,-63%) rotate(2deg)}}
+@keyframes bump{0%{transform:translate(-50%,-50%) scale(1.06,.94) rotate(-5deg)}55%{transform:translate(-50%,-64%) scale(.97,1.03) rotate(3deg)}100%{transform:translate(-50%,-58%) rotate(-2deg)}}
+.demo .bub{left:auto; right:4%; top:96px; transform:rotate(3deg); z-index:2}
+/* story strip */
+.strip{display:grid; gap:var(--gap); margin-top:clamp(26px,4vw,40px); grid-template-columns:1fr}
+@media (min-width:820px){.strip{grid-template-columns:repeat(3,1fr)}}
+.panel{margin:0; overflow:hidden}
+/* the Warden Files */
+.boss{flex-direction:column; align-items:stretch; gap:0; padding:0; overflow:hidden}
+.boss__art{position:relative; aspect-ratio:16/9; background:radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 65%)}
+.boss__art svg{position:absolute; inset:6% 0 0; width:100%; height:94%}
+.boss__art .bub{top:8px; left:10px}
+.boss > div:last-child{padding:12px 16px 16px}
+.boss__sub{font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin:4px 0 0}
+/* secret realms: shadows from the comic's rumors panel */
+.realm{border-style:solid; background:#05040c}
+.realm svg{display:block; width:100%; max-width:240px; margin:0 auto 6px; height:auto}
+.realm__label{text-transform:none; letter-spacing:.01em; font-size:.92rem; font-style:italic; color:rgba(232,228,255,.82)}
+/* how to play: five numbered panels */
+.steps{ grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; border:0; background:none; overflow:visible }
+.steps li{ flex-direction:column; gap:10px; padding:18px 18px 20px; align-items:flex-start }
+.steps li::before{
+  font-size:15px; font-weight:1000; color:var(--ink); text-shadow:none; background:var(--cap);
+  border:2.5px solid var(--ink); border-radius:50%; width:40px; height:40px; display:grid; place-items:center;
+  box-shadow:2px 2px 0 var(--ink); letter-spacing:0;
+}
+.steps li:nth-child(odd){transform:rotate(-.6deg)} .steps li:nth-child(even){transform:rotate(.5deg)}
+/* screenshots as panels */
+.shot__tag{ color:var(--ink); background:var(--cap); border:2.5px solid var(--ink); border-radius:3px; box-shadow:2px 2px 0 var(--ink); transform:rotate(-1.4deg) }
+.shot__frame{ border:3px solid var(--paper); border-radius:6px; box-shadow:5px 5px 0 rgba(0,0,0,.7), 0 0 34px -10px var(--glow1) }
+.shot figcaption{color:rgba(232,228,255,.75)}
+/* closing panel */
+.cta__art{position:relative; max-width:420px; margin:0 auto 6px}
+.cta__art svg{display:block; width:100%; height:auto}
+.cta__art .bub{right:4%; top:2%}
+.tbc{margin:0 0 14px; font-size:11px; font-weight:1000; letter-spacing:.3em; text-transform:uppercase; color:var(--cap)}
+.foot__mark{font-style:italic}
+@media (prefers-reduced-motion:reduce){.demo__ufo,.demo__ufo.bump{animation:none}}
 </style>
 </head>
 
 <body>
 <a class="skip" href="#main">Skip to content</a>
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="cxGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9ddff" stop-opacity="0.32"/><stop offset="1" stop-color="#7a4bd6" stop-opacity="0.18"/></linearGradient>
+          <radialGradient id="cxCore" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff"/><stop offset="0.4" stop-color="#ff7ef0"/><stop offset="1" stop-color="#ff2bd6" stop-opacity="0"/></radialGradient>
+          <pattern id="cxDots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1" fill="#fff" fill-opacity="0.09"/></pattern>
+          <symbol id="cxSaucer" viewBox="-62 -44 124 88">
+            <ellipse cx="0" cy="2" rx="58" ry="10" fill="none" stroke="#b45cff" stroke-width="3" opacity="0.55"/>
+            <ellipse cx="0" cy="2" rx="50" ry="7.5" fill="none" stroke="#46eeff" stroke-width="1.6" opacity="0.6"/>
+            <path d="M-9 12 L9 12 L22 40 L-22 40 Z" fill="#46eeff" opacity="0.16"/>
+            <ellipse cx="0" cy="27" rx="13" ry="3" fill="none" stroke="#46eeff" stroke-width="1.5" opacity="0.7"/>
+            <ellipse cx="0" cy="36" rx="18" ry="3.6" fill="none" stroke="#46eeff" stroke-width="1.5" opacity="0.5"/>
+            <path d="M-44 1 Q0 22 44 1 Z" fill="#241d38" stroke="#b45cff" stroke-width="2"/>
+            <ellipse cx="0" cy="12" rx="10" ry="3.4" fill="url(#cxCore)"/>
+            <ellipse cx="0" cy="0" rx="46" ry="9" fill="#3b3456" stroke="#c78bff" stroke-width="2.4"/>
+            <ellipse cx="0" cy="-2.5" rx="30" ry="5.5" fill="#5a5274"/>
+            <g fill="#5ef2ff"><circle cx="-36" cy="4.5" r="1.9"/><circle cx="-24" cy="6.5" r="1.9"/><circle cx="-12" cy="7.6" r="1.9"/><circle cx="0" cy="8" r="1.9"/><circle cx="12" cy="7.6" r="1.9"/><circle cx="24" cy="6.5" r="1.9"/><circle cx="36" cy="4.5" r="1.9"/></g>
+            <!-- the pilot: you -->
+            <circle cx="0" cy="-13" r="9.5" fill="#86f5d4"/>
+            <path d="M-9.5 -16 A9.5 9.5 0 0 1 9.5 -16" fill="none" stroke="#1a1430" stroke-width="2.4"/>
+            <rect x="-12.5" y="-17" width="4.6" height="7" rx="2" fill="#ff2bd6"/><rect x="7.9" y="-17" width="4.6" height="7" rx="2" fill="#ff2bd6"/>
+            <ellipse cx="-3.4" cy="-13.5" rx="2.6" ry="3.2" fill="#fff"/><ellipse cx="3.4" cy="-13.5" rx="2.6" ry="3.2" fill="#fff"/>
+            <circle cx="-3" cy="-13" r="1.5" fill="#111"/><circle cx="3.8" cy="-13" r="1.5" fill="#111"/>
+            <circle cx="-6.4" cy="-9.6" r="1.3" fill="#ff8fc8" opacity="0.8"/><circle cx="6.4" cy="-9.6" r="1.3" fill="#ff8fc8" opacity="0.8"/>
+            <path d="M-2.6 -8.6 Q0 -6.4 2.6 -8.6" fill="none" stroke="#111" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M-21 -3 A21 19 0 0 1 21 -3 Z" fill="url(#cxGlass)" stroke="#efe6ff" stroke-width="1.6"/>
+            <path d="M-13 -13 Q-9 -19 -3 -20" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="0.8"/>
+          </symbol>
+          <symbol id="cxHex" viewBox="-52 -50 104 100">
+            <polygon points="-48,-8 -32,-22 -32,14" fill="#062430" stroke="#00f5ff" stroke-width="3" stroke-linejoin="round"/>
+            <polygon points="48,-8 32,-22 32,14" fill="#062430" stroke="#00f5ff" stroke-width="3" stroke-linejoin="round"/>
+            <polygon points="0,-31 27,-15.5 27,15.5 0,31 -27,15.5 -27,-15.5" fill="#0a1d2e" stroke="#00f5ff" stroke-width="3.4" stroke-linejoin="round"/>
+            <polygon points="0,-20 17.3,-10 17.3,10 0,20 -17.3,10 -17.3,-10" fill="none" stroke="#ff2bd6" stroke-width="2.4"/>
+            <circle cx="0" cy="2" r="9.5" fill="#7dff68"/><circle cx="1" cy="3" r="4.2" fill="#0b2a10"/><circle cx="-2.5" cy="-1.5" r="2" fill="#fff"/>
+            <path d="M-13 -13 L-3 -8.5 M13 -13 L3 -8.5" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          </symbol>
+          <symbol id="cxTri" viewBox="-52 -54 104 100">
+            <g stroke="#ff4fa3" stroke-width="2" fill="#3a0a1c" opacity="0.9">
+              <path d="M0 0 L46 -10 L0 -4 Z"/><path d="M0 0 L-24 40 L-3 2 Z"/><path d="M0 0 L-22 -42 L-4 -2 Z"/>
+            </g>
+            <polygon points="0,-30 30,22 -30,22" fill="#2a0710" stroke="#ff2e4d" stroke-width="3.4" stroke-linejoin="round"/>
+            <path d="M-11 -32 L-11 -44 L-5 -38 L0 -47 L5 -38 L11 -44 L11 -32 Z" fill="#ffd23d" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/>
+            <ellipse cx="-7" cy="4" rx="4.4" ry="3.6" fill="#fff"/><ellipse cx="7" cy="4" rx="4.4" ry="3.6" fill="#fff"/>
+            <circle cx="-6.4" cy="2.6" r="1.8" fill="#111"/><circle cx="7.6" cy="2.6" r="1.8" fill="#111"/>
+            <path d="M-12 1.8 L-2.6 2.6 M12 1.8 L2.6 2.6" stroke="#ffd23d" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M-6 12 Q-3 9 0 11.5 Q3 9 6 12" fill="none" stroke="#ffd23d" stroke-width="1.8" stroke-linecap="round"/>
+          </symbol>
+          <symbol id="cxPrism" viewBox="-50 -50 100 100">
+            <path d="M-46 -4 L-20 -2" stroke="#ff2e4d" stroke-width="3"/><path d="M-46 0 L-20 1" stroke="#ffd23d" stroke-width="3"/><path d="M-46 4 L-20 4" stroke="#5ef2ff" stroke-width="3"/>
+            <polygon points="-18,-26 0,-36 18,-26 0,-16" fill="#6a3ab0" stroke="#7dff68" stroke-width="2" stroke-linejoin="round"/>
+            <polygon points="-18,-26 0,-16 0,34 -18,24" fill="#2a1250" stroke="#7dff68" stroke-width="2" stroke-linejoin="round"/>
+            <polygon points="18,-26 0,-16 0,34 18,24" fill="#3a1866" stroke="#7dff68" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="-8" cy="2" r="2.4" fill="#fff"/><circle cx="8" cy="2" r="2.4" fill="#fff"/>
+            <path d="M-4 11 L4 11" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+          </symbol>
+          <symbol id="cxEclipse" viewBox="-52 -52 104 104">
+            <g fill="#ffd23d"><polygon points="0,-50 5,-34 -5,-34"/><polygon points="0,50 5,34 -5,34"/><polygon points="-50,0 -34,5 -34,-5"/><polygon points="50,0 34,5 34,-5"/>
+              <polygon points="-35,-35 -21,-27 -27,-21"/><polygon points="35,35 21,27 27,21"/><polygon points="35,-35 27,-21 21,-27"/><polygon points="-35,35 -27,21 -21,27"/></g>
+            <circle cx="0" cy="0" r="31" fill="none" stroke="#ff2e4d" stroke-width="3"/>
+            <circle cx="0" cy="0" r="26" fill="#060009" stroke="#b026ff" stroke-width="2"/>
+            <path d="M-15 -8 Q-9 -14 -3 -8 Q-9 -10 -15 -8 Z M15 -8 Q9 -14 3 -8 Q9 -10 15 -8 Z" fill="#ffd23d" stroke="#ffd23d" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M-16 4 Q0 22 16 4 Z" fill="#170012" stroke="#ffd23d" stroke-width="1.8"/>
+            <path d="M-12 7 L-9 11 L-6 8 L-3 12 L0 8.5 L3 12 L6 8 L9 11 L12 7" fill="none" stroke="#ffd23d" stroke-width="1.4"/>
+          </symbol>
+          <symbol id="cxPlanet" viewBox="-30 -30 60 60">
+            <circle r="24" fill="#3b7fb0" stroke="#bff3ff" stroke-width="1.6"/>
+            <path d="M-20 -6 Q0 -12 20 -6" fill="none" stroke="#9ff4ff" stroke-width="3" opacity="0.4"/>
+            <path d="M-11 2 Q-7 5 -3 2 M3 2 Q7 5 11 2" fill="none" stroke="#08213a" stroke-width="2" stroke-linecap="round"/>
+            <path d="M-3 10 Q0 12 3 10" fill="none" stroke="#08213a" stroke-width="1.6" stroke-linecap="round"/>
+          </symbol>
+        </defs>
+      </svg>
+
+
 
 <main id="main">
 
@@ -757,7 +947,7 @@ footer{
       </div>
 
       <!-- signature element: a live, tappable ring — the core mechanic itself -->
-      <div class="demo">
+      <div class="demo" style="position:relative">
         <!-- HUD readout, driven by the live demo below — real values, not decoration -->
         <div class="demo__hud">
           <div class="demo__cell">
@@ -773,14 +963,47 @@ footer{
             <p class="demo__v" id="hudBest">0</p>
           </div>
         </div>
+        <span class="bub bub-l" aria-hidden="true">Try it!</span>
         <div class="demo__stage" id="stage" role="button" tabindex="0" aria-label="Practice ring. Tap or press Enter when the ring meets the target.">
           <canvas id="pulse" aria-hidden="true"></canvas>
+          <svg class="demo__ufo" id="demoUfo" aria-hidden="true"><use href="#cxSaucer" width="100%" height="100%"/></svg>
           <p class="demo__verdict" id="verdict" aria-live="polite"></p>
         </div>
         <p class="demo__hint">Try it — tap when the ring hits the <strong>target</strong></p>
       </div>
     </div>
   </header>
+
+  <!-- ====================== STORY: THE SIGNAL ====================== -->
+  <section class="band band--tight" id="story" aria-labelledby="story-h">
+    <div class="wrap">
+      <p class="eyebrow">Previously, in The Signal&hellip;</p>
+      <h2 id="story-h">One tiny saucer vs. four grumpy robots</h2>
+      <div class="strip">
+        <figure class="panel rise" style="--accent:var(--c1)">
+          <p class="cap">Out past the last star, a net of light called <b>the Grid</b> keeps a thousand worlds safe. It runs on a song: <b>the Signal</b>.</p>
+          <div class="art"><svg viewBox="0 0 320 150" role="img" aria-label="Sleepy planets tucked under a glowing net of light">
+            <g fill="none" stroke="#5ef2ff" stroke-opacity="0.45" stroke-width="1.2"><path d="M0 50 Q160 0 320 50"/><path d="M0 78 Q160 28 320 78"/><path d="M0 106 Q160 56 320 106"/><path d="M40 0 L70 150 M100 0 L115 150 M160 0 L160 150 M220 0 L205 150 M280 0 L250 150"/></g>
+            <use href="#cxPlanet" x="30" y="70" width="64" height="64"/><use href="#cxPlanet" x="134" y="80" width="52" height="52"/><use href="#cxPlanet" x="222" y="64" width="72" height="72"/>
+            <text x="90" y="74" class="zzz">z</text><text x="98" y="62" class="zzz">z</text><text x="186" y="84" class="zzz">z</text><text x="290" y="64" class="zzz">z</text>
+          </svg></div>
+        </figure>
+        <figure class="panel rise" style="--accent:var(--c2)">
+          <p class="cap">But out in the dark live some very big, very grumpy machines. They <b>hate</b> music.</p>
+          <div class="art dark"><svg viewBox="0 0 320 150" role="img" aria-label="Four warden machines glaring out of the dark">
+            <use href="#cxHex" x="4" y="44" width="80" height="78"/><use href="#cxTri" x="82" y="38" width="76" height="76"/><use href="#cxPrism" x="160" y="46" width="72" height="72"/><use href="#cxEclipse" x="234" y="38" width="82" height="82"/>
+          </svg><span class="bub" style="right:5%;top:6%">TOO. MUCH. GROOVE.</span></div>
+        </figure>
+        <figure class="panel rise" style="--accent:var(--c3)">
+          <p class="cap">Enter <b>you</b>: one tiny saucer with a gravity engine that runs on rhythm.</p>
+          <div class="art"><svg viewBox="0 0 320 150" role="img" aria-label="The hero: a little saucer with a pilot wearing headphones">
+            <use href="#cxSaucer" x="62" y="8" width="196" height="139"/>
+          </svg><span class="bub bub-l" style="left:58%;top:6%">Let's jam!</span><span class="sfx" style="left:5%;bottom:10%">VWOOM</span></div>
+        </figure>
+      </div>
+      <p class="lede">Read the whole comic in the game: tap <b>The Signal</b> on the menu. Rumor has it there's more hidden in there than story.</p>
+    </div>
+  </section>
 
   <!-- ========================= 3. FEATURES ========================= -->
   <section class="band band--tight" aria-labelledby="features-h">
@@ -808,7 +1031,7 @@ footer{
           </div>
           <p class="card__tag">Core</p>
           <h3>Boss core abilities</h3>
-          <p>Defeat bosses and capture their cores to unlock powers like Hex Saw, Tri-Laser, Prism Guard, and Eclipse Realm.</p>
+          <p>Defeat bosses and capture their cores to unlock powers like Hex Saw, Tri-Laser, Prism Guard, and Event Horizon.</p>
         </article>
 
         <article class="card rise" style="--accent:var(--c3)">
@@ -840,61 +1063,48 @@ footer{
   <!-- ========================== 4. BOSSES ========================== -->
   <section class="band" id="bosses" aria-labelledby="boss-h">
     <div class="wrap">
-      <p class="eyebrow">Boss cores</p>
+      <p class="eyebrow">The Warden Files</p>
       <h2 id="boss-h">Boss fights change the run</h2>
       <p class="lede">Every major boss has its own arena, music, attack rhythm, and unlockable power. Learn the patterns, survive the pressure, and turn their core into your weapon.</p>
 
       <div class="bosses">
-
         <article class="boss rise" style="--accent:var(--c1)">
-          <div class="boss__glyph" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
-              <path d="M24 5 40 14v20L24 43 8 34V14z"/><path d="M24 15 33 20v10l-9 5-9-5V20z" stroke-dasharray="4 3"/>
-            </svg>
-          </div>
+          <div class="boss__art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cxHex" width="100%" height="100%"/></svg><span class="bub bub-s">OFF-BEAT! OFF-BEAT!</span></div>
           <div>
             <p class="boss__name">Hexatron</p>
+            <p class="boss__sub">The Signal Warden · Stage 20</p>
             <p class="boss__core">Core → Hex Saw</p>
-            <p class="boss__note">Capture the core to equip Hex Saw.</p>
+            <p class="boss__note">Six sides, zero rhythm. Capture its core to equip Hex Saw.</p>
           </div>
         </article>
 
         <article class="boss rise" style="--accent:var(--c2)">
-          <div class="boss__glyph" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
-              <path d="M24 5 43 40H5z"/><path d="M24 18 34 35H14z" stroke-dasharray="4 3"/>
-            </svg>
-          </div>
+          <div class="boss__art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cxTri" width="100%" height="100%"/></svg><span class="bub bub-s">KNEEL TO THE TRIANGLE.</span></div>
           <div>
             <p class="boss__name">Triarch</p>
+            <p class="boss__sub">The Razor Emperor · Stage 30</p>
             <p class="boss__core">Core → Tri-Laser</p>
-            <p class="boss__note">Capture the core to equip Tri-Laser.</p>
+            <p class="boss__note">Three blades, one tiny crown, one enormous ego. Its core powers Tri-Laser.</p>
           </div>
         </article>
 
         <article class="boss rise" style="--accent:var(--c3)">
-          <div class="boss__glyph" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
-              <path d="M24 4 44 24 24 44 4 24z"/><path d="M24 4v40M4 24h40" stroke-dasharray="3 4"/>
-            </svg>
-          </div>
+          <div class="boss__art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cxPrism" width="100%" height="100%"/></svg><span class="bub bub-s">…</span></div>
           <div>
             <p class="boss__name">Vanta Prism</p>
+            <p class="boss__sub">The Null Shard · Stage 40</p>
             <p class="boss__core">Core → Prism Guard</p>
-            <p class="boss__note">Capture the core to equip Prism Guard.</p>
+            <p class="boss__note">Bends light until it isn't there. Doesn't say much. Its core powers Prism Guard.</p>
           </div>
         </article>
 
         <article class="boss rise" style="--accent:var(--white)">
-          <div class="boss__glyph" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2">
-              <circle cx="24" cy="24" r="19"/><circle cx="30" cy="21" r="15" fill="#05060f" stroke="none"/><circle cx="30" cy="21" r="15" stroke-dasharray="4 5"/>
-            </svg>
-          </div>
+          <div class="boss__art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cxEclipse" width="100%" height="100%"/></svg><span class="bub bub-s">I AM THE END OF THE SONG.</span></div>
           <div>
             <p class="boss__name">Eclipse Sovereign</p>
-            <p class="boss__core">Core → Eclipse Realm</p>
-            <p class="boss__note">Capture the core to equip Eclipse Realm.</p>
+            <p class="boss__sub">The Last Orbit · Stage 50</p>
+            <p class="boss__core">Core → Event Horizon</p>
+            <p class="boss__note">Wants to swallow the last light in the sky. Rude. Its core opens the Event Horizon.</p>
           </div>
         </article>
 
@@ -905,28 +1115,28 @@ footer{
   <!-- ======================= 5. SECRET REALMS ======================= -->
   <section class="band band--tight" aria-labelledby="realms-h">
     <div class="wrap">
-      <p class="eyebrow">Classified</p>
+      <p class="eyebrow">Things the Wardens never talk about&hellip;</p>
       <h2 id="realms-h">Hidden realms are waiting</h2>
       <p class="lede">Rhythm Void has more than one rhythm. Find the hidden paths, enter secret realms, and face bosses that don't play by the normal rules.</p>
 
       <div class="realms">
-        <div class="realm rise">
+        <div class="realm rise" style="--accent:#ff2b12">
+          <svg viewBox="34 22 140 80" aria-hidden="true"><path d="M40 74 Q62 30 96 52 Q102 34 116 30 Q112 46 120 58 Q150 40 168 70 Q140 66 126 78 Q112 92 90 86 Q70 96 40 74 Z" fill="#1d0403" stroke="#ff2b12" stroke-width="1.4" stroke-opacity="0.7"/><circle cx="112" cy="46" r="2.4" fill="#ff7a1a"/><circle cx="118" cy="47" r="2" fill="#ff7a1a"/></svg>
           <p class="realm__lock" aria-hidden="true">???</p>
-          <p class="realm__label">Realm — undiscovered</p>
-          <p class="realm__blur" aria-hidden="true">Entry condition unknown</p>
+          <p class="realm__label">Something old and hungry sleeps beneath the Grid.</p>
         </div>
-        <div class="realm rise">
+        <div class="realm rise" style="--accent:#5ef2ff">
+          <svg viewBox="-40 -22 80 56" aria-hidden="true"><ellipse rx="24" ry="5" fill="#0b2230" stroke="#5ef2ff" stroke-width="1.4"/><path d="M-11 -2 A11 10 0 0 1 11 -2" fill="#0f3a48" stroke="#5ef2ff" stroke-width="1.2"/><path d="M-6 6 L6 6 L14 26 L-14 26 Z" fill="#5ef2ff" opacity="0.14"/></svg>
           <p class="realm__lock" aria-hidden="true">???</p>
-          <p class="realm__label">Realm — undiscovered</p>
-          <p class="realm__blur" aria-hidden="true">Soundtrack unrecognised</p>
+          <p class="realm__label">A strange craft hides where not even light can escape.</p>
         </div>
-        <div class="realm rise">
+        <div class="realm rise" style="--accent:#ffd23d">
+          <svg viewBox="-36 -24 72 48" aria-hidden="true"><path d="M-22 0 Q0 -16 22 0 Q0 16 -22 0 Z" fill="#0d1430" stroke="#ffd23d" stroke-width="1.4"/><circle r="6" fill="#ffd23d"/><circle r="2.6" fill="#0d1430"/></svg>
           <p class="realm__lock" aria-hidden="true">???</p>
-          <p class="realm__label">Realm — undiscovered</p>
-          <p class="realm__blur" aria-hidden="true">Boss signature not on file</p>
+          <p class="realm__label">And whoever built the Grid still keeps score.</p>
         </div>
       </div>
-      <p class="lede" style="margin-top:22px">No hints here. Play far enough and you'll know when you've found one.</p>
+      <p class="lede" style="margin-top:22px">Each one hides its own world, its own boss and its own music. Beat it and the world is yours to keep.</p>
     </div>
   </section>
 
@@ -1055,6 +1265,11 @@ footer{
   <section class="band band--tight">
     <div class="wrap">
       <div class="cta">
+        <div class="cta__art"><svg viewBox="0 0 320 118" aria-hidden="true">
+          <circle cx="160" cy="62" r="52" fill="none" stroke="#5ef2ff" stroke-width="2" opacity="0.5"/><circle cx="160" cy="62" r="40" fill="none" stroke="#b45cff" stroke-width="3" opacity="0.7"/>
+          <use href="#cxSaucer" x="104" y="22" width="112" height="80"/>
+        </svg><span class="bub bub-l">Hold the beat!</span></div>
+        <p class="tbc">To be continued&hellip; by you</p>
         <h2>One tap and you're in</h2>
         <p>It runs in the browser on phone or desktop. No download, no account, no waiting.</p>
         <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="cta_band">Play free</a>
@@ -1219,14 +1434,7 @@ footer{
     ring(targetR, "#ff2bd6", 2.5, .95, 16);
     ring(targetR - 7, "#ff2bd6", 1, .28, 0);
 
-    /* core */
-    ctx.beginPath();
-    ctx.arc(cx, cy, size * 0.045, 0, Math.PI * 2);
-    ctx.fillStyle = "#f7fbff";
-    ctx.shadowColor = "#00f5ff";
-    ctx.shadowBlur = 22;
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    /* the saucer (an SVG over the canvas) sits on the target */
 
     /* incoming ring */
     var r = currentR(now);
@@ -1272,11 +1480,13 @@ footer{
     verdict.classList.add("show");
   }
 
+  var ufo = document.getElementById("demoUfo");
   function hit(){
     if (reduce) return;
     if (judged){ return; }
     var d = Math.abs(currentR(performance.now()) - targetR);
     judged = true;
+    if (d < size * 0.07 && ufo){ ufo.classList.remove("bump"); void ufo.getBoundingClientRect(); ufo.classList.add("bump"); }
     if (d < size * 0.028){
       combo++; flash = 1; flashHue = "#f7fbff";
       say("Perfect", "#f7fbff");
