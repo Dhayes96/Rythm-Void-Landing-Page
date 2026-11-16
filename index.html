@@ -16,7 +16,7 @@
 
 <!-- ============ SEO ============ -->
 <title>Rhythm Void — Free Browser Rhythm Arcade Game</title>
-<meta name="description" content="Rhythm Void is a free browser rhythm arcade game. Tap glowing rings, fight bosses, capture their cores, unlock hidden realms, and chase your weekly best. No download, no account.">
+<meta name="description" content="Rhythm Void is a free browser rhythm arcade game. Hit every beat to stay alive, fly your saucer through the void, and face what is waiting in it. No download, no account.">
 <meta name="theme-color" content="#05060F">
 
 <!-- ===================================================================
@@ -25,8 +25,13 @@
      Custom events, sent by the delegated listener at the bottom of this
      file. Both carry `location` and `page_path`:
 
-       play_free_click     — 7 links: hero, how_to_play, cta_band,
-                             feedback_card, footer, sticky_dock
+       play_free_click     — hero, top_bar, trailer_head, trailer_end,
+                             how_to_play, boss, cta_band, feedback_card,
+                             footer, sticky_dock
+       watch_trailer_click — the hero's Watch trailer button
+       trailer_play        — first play of the trailer (location says
+                             which control started it)
+       trailer_complete    — the trailer played to the end
        contact_email_click — the beta feedback CTA and the email card
 
      The Measurement ID appears exactly once per page, in the Google tag.
@@ -71,7 +76,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Rhythm Void">
 <meta property="og:title" content="Rhythm Void — every tap keeps you alive">
-<meta property="og:description" content="Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best. Play free in your browser.">
+<meta property="og:description" content="Every beat keeps you alive, and the song is longer than you think. Play free in your browser.">
 <meta property="og:url" content="https://playrhythmvoid.com/">
 <meta property="og:image" content="https://playrhythmvoid.com/social-card.png">
 <meta property="og:image:width" content="1200">
@@ -79,919 +84,522 @@
 <meta property="og:image:alt" content="Rhythm Void — glowing cyan and magenta rhythm rings on a dark void background">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Rhythm Void — every tap keeps you alive">
-<meta name="twitter:description" content="Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best. Play free in your browser.">
+<meta name="twitter:description" content="Every beat keeps you alive, and the song is longer than you think. Play free in your browser.">
 <meta name="twitter:image" content="https://playrhythmvoid.com/social-card.png">
 
 <!-- No web fonts: the game uses the rounded system stack, so the landing
      page mirrors it. Three fewer requests, and the two surfaces match. -->
 
+<link rel="preload" as="image" href="assets/landing/hero-space.webp" fetchpriority="high">
 <style>
 /* ===================================================================
-   RHYTHM VOID \u2014 LANDING PAGE
-   Visual language mirrored from the game (/play/index.html). Tokens,
-   panel geometry, button shape and HUD text styling below are taken
-   from the game's own CSS so the two read as one product.
+   RHYTHM VOID — LANDING PAGE (Nov 2026 refresh)
+   Tokens are lifted from the game (/play/index.html) so the two read
+   as one product. No web fonts: the game uses the rounded system stack.
    =================================================================== */
 :root{
-  /* --- lifted verbatim from the game's :root --- */
   --void:#050510;
   --c1:#00f5ff;            /* primary neon   */
   --c2:#ff2bd6;            /* secondary neon */
   --c3:#7dff68;            /* tertiary neon  */
   --white:#f7fbff;
-  --danger:#ff3864;
   --glow1:rgba(0,245,255,.75);
   --glow2:rgba(255,43,214,.5);
-  --glow3:rgba(125,255,104,.42);
-
-  /* --- landing-page derivations --- */
-  --panel:rgba(8,8,20,.55);
-  --panel-solid:rgba(8,8,20,.82);
   --line:rgba(255,255,255,.12);
   --line-soft:rgba(255,255,255,.07);
   --text:#c3d1e4;
-  --dim:#8592ad;
-
-  /* The game ships no web fonts \u2014 it uses the rounded system stack below.
-     Matching it keeps the two surfaces identical and costs zero requests. */
+  --dim:#93a0ba;
   --ui:ui-rounded,"SF Pro Rounded",Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-
-  --r:18px;                /* the game's HUD corner radius */
-  --r-lg:24px;
+  --r:18px;
   --pill:999px;
   --pad:clamp(20px,5vw,40px);
-  --gap:clamp(14px,2.6vw,20px);
-  --sec:clamp(64px,11vw,120px);
+  --gap:clamp(14px,2.6vw,22px);
+  --sec:clamp(72px,12vw,140px);
 }
-
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;background:var(--void)}
 body{
-  margin:0;
-  background:var(--void);
-  color:var(--text);
-  font-family:var(--ui);
-  font-size:clamp(15px,1.6vw,17px);
-  line-height:1.65;
-  overflow-x:hidden;
-  -webkit-font-smoothing:antialiased;
+  margin:0;background:var(--void);color:var(--text);
+  font-family:var(--ui);font-size:clamp(15px,1.6vw,17px);line-height:1.65;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
 }
-
-/* ===================================================================
-   BACKGROUND \u2014 void, halftone dots, neon arcs. Gradients only, no images.
-   =================================================================== */
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  z-index:-2;
-  background:
-    radial-gradient(46% 34% at 78% 6%,  rgba(255,43,214,.20), transparent 64%),
-    radial-gradient(52% 40% at 10% 18%, rgba(0,245,255,.18),  transparent 66%),
-    radial-gradient(40% 30% at 88% 62%, rgba(125,255,104,.10),transparent 68%),
-    radial-gradient(80% 62% at 50% 106%,rgba(255,43,214,.16), transparent 70%),
-    linear-gradient(180deg,#050510 0%,#06071a 42%,#050510 100%);
-}
-/* arena grid + orbit arcs, masked so they fade out down the page */
-body::after{
-  content:"";
-  position:fixed;
-  inset:0;
-  z-index:-1;
-  pointer-events:none;
-  background-image:
-    repeating-radial-gradient(circle at 50% 30%,
-      transparent 0 118px, rgba(0,245,255,.055) 118px 119px, transparent 119px 240px),
-    linear-gradient(rgba(140,170,255,.045) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(140,170,255,.045) 1px,transparent 1px);
-  background-size:auto, 62px 62px, 62px 62px;
-  mask-image:radial-gradient(88% 62% at 50% 4%,#000 12%,transparent 88%);
-  -webkit-mask-image:radial-gradient(88% 62% at 50% 4%,#000 12%,transparent 88%);
-}
-
-img{max-width:100%;display:block}
+img,video{max-width:100%;display:block}
 a{color:var(--c1)}
-
-:focus-visible{
-  outline:2px solid var(--c1);
-  outline-offset:3px;
-  border-radius:6px;
-}
-
-.skip{
-  position:absolute;left:-9999px;top:0;z-index:100;
-  background:var(--c1);color:#050510;padding:10px 16px;
-  font-weight:900;letter-spacing:.06em;text-transform:uppercase;
-}
+:focus-visible{outline:2px solid var(--c1);outline-offset:3px;border-radius:6px}
+.skip{position:absolute;left:-999px;top:0;z-index:100;background:#fff;color:#050510;padding:10px 16px;border-radius:8px;font-weight:800}
 .skip:focus{left:12px;top:12px}
-
-/* ===================================================================
-   LAYOUT
-   =================================================================== */
 .wrap{width:100%;max-width:1140px;margin-inline:auto;padding-inline:var(--pad)}
-.band{padding-block:var(--sec)}
-.band--tight{padding-block:calc(var(--sec) * .62)}
+.band{padding-block:var(--sec);position:relative}
+.band--tight{padding-block:calc(var(--sec) * .6)}
 
-/* HUD label \u2014 the game's small-caps stat label: 10px / .16em / upper */
+h1,h2,h3{font-family:var(--ui);font-weight:900;line-height:1.04;margin:0;color:var(--white)}
+h2{font-size:clamp(1.8rem,5vw,3rem);text-transform:uppercase;letter-spacing:.03em}
+h3{font-size:1rem;letter-spacing:.08em;text-transform:uppercase}
 .eyebrow{
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--c1);
-  margin:0 0 14px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  text-shadow:0 0 12px var(--glow1);
+  margin:0 0 14px;font-size:.74rem;font-weight:900;letter-spacing:.32em;text-transform:uppercase;color:var(--c1);
 }
-.eyebrow::after{
-  content:"";
-  flex:1;
-  height:1px;
-  background:linear-gradient(90deg,rgba(0,245,255,.45),transparent);
-}
+.lede{max-width:60ch;color:var(--text);margin:18px 0 0;font-size:1.04em}
+.dim{color:var(--dim)}
 
-/* HUD value type: heavy, tight, glowing */
-h1,h2,h3{
-  font-family:var(--ui);
-  font-weight:900;
-  line-height:1.02;
-  margin:0;
-  color:var(--white);
-}
-h2{
-  font-size:clamp(1.8rem,5.2vw,2.9rem);
-  text-transform:uppercase;
-  letter-spacing:.02em;
-  text-shadow:0 0 18px rgba(0,245,255,.28);
-}
-h3{
-  font-size:1.02rem;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-}
-
-.lede{max-width:62ch;color:var(--dim);margin:18px 0 0;font-size:1.02em}
-
-/* ===================================================================
-   BUTTONS \u2014 the game's pill: 999px, dark text, cyan\u2192magenta, heavy glow
-   =================================================================== */
+/* ---------- buttons: the game's pill ---------- */
 .btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  font-family:var(--ui);
-  font-weight:950;
-  font-size:16px;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  text-decoration:none;
-  min-height:56px;
-  padding:14px 30px;
-  border:0;
-  border-radius:var(--pill);
-  cursor:pointer;
-  transition:transform .18s ease,box-shadow .25s ease,filter .25s ease;
-}
-.btn--play{
-  color:#050510;
-  background:linear-gradient(90deg,var(--c1),var(--c2));
-  box-shadow:0 0 26px var(--glow1),0 0 44px var(--glow2);
-}
-.btn--play:hover,.btn--play:focus-visible{
-  transform:translateY(-2px);
-  filter:brightness(1.08);
-  box-shadow:0 0 34px var(--glow1),0 0 60px var(--glow2);
-}
-.btn--ghost{
-  color:var(--white);
-  font-weight:800;
-  background:rgba(255,255,255,.07);
-  border:1px solid rgba(255,255,255,.2);
-}
-.btn--ghost:hover,.btn--ghost:focus-visible{
-  transform:translateY(-2px);
-  border-color:var(--c1);
-  background:rgba(255,255,255,.11);
-}
-
-/* ===================================================================
-   HERO \u2014 game screen, not a marketing block
-   =================================================================== */
-.hero{
-  position:relative;
-  padding-block:clamp(40px,8vw,84px) clamp(52px,9vw,100px);
-}
-/* arena floor glow behind the hero, echoing the in-game arena vignette */
-.hero::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:-1;
-  background:radial-gradient(circle at 50% 44%,rgba(255,43,214,.16),transparent 58%);
-  pointer-events:none;
-}
-.hero__grid{display:grid;gap:clamp(30px,6vw,56px);align-items:center}
-
-.hero__tag{
-  display:inline-block;
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:#050510;
-  background:linear-gradient(90deg,var(--c1),var(--c3));
-  box-shadow:0 0 22px var(--glow1);
-  border-radius:var(--pill);
-  padding:6px 16px;
-  margin:0 0 22px;
-}
-.hero h1{
-  font-size:clamp(3rem,14vw,6.8rem);
-  font-weight:900;
-  letter-spacing:.01em;
-  text-transform:uppercase;
-  color:var(--white);
-  text-shadow:
-    0 0 18px rgba(0,245,255,.55),
-    0 0 44px rgba(255,43,214,.40),
-    0 0 90px rgba(0,245,255,.22);
-}
-.hero__sub{
-  font-size:clamp(1.02rem,2.6vw,1.28rem);
-  font-weight:800;
-  color:var(--white);
-  margin:20px 0 0;
-  max-width:34ch;
-  line-height:1.4;
-}
-.hero__copy{max-width:52ch;color:var(--dim);margin:14px 0 0}
-.hero__actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
-.hero__note{margin:18px 0 0;font-size:.86rem;color:var(--dim)}
-.hero__note b{color:var(--c1);font-weight:800}
-
-/* ---- live demo, framed as HUD ---- */
-.demo{justify-self:center;width:min(100%,400px)}
-.demo__hud{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:8px;
-  margin-bottom:14px;
-}
-.demo__cell{
-  border:1px solid var(--line);
-  background:rgba(8,8,20,.35);
-  -webkit-backdrop-filter:blur(12px);
-  backdrop-filter:blur(12px);
-  box-shadow:0 0 24px var(--glow2),inset 0 0 24px rgba(255,255,255,.03);
-  border-radius:var(--r);
-  padding:9px 12px;
-  text-align:center;
-}
-.demo__k{
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--dim);
-}
-.demo__v{
-  font-size:clamp(18px,4vw,26px);
-  font-weight:900;
-  line-height:1;
-  margin-top:4px;
-  color:var(--white);
-  text-shadow:0 0 12px var(--glow1);
-}
-.demo__v[data-j="perfect"]{color:var(--c3);text-shadow:0 0 14px var(--glow3)}
-.demo__v[data-j="good"]{color:var(--c1);text-shadow:0 0 14px var(--glow1)}
-.demo__v[data-j="miss"]{color:var(--danger);text-shadow:0 0 14px rgba(255,56,100,.6)}
-
-.demo__stage{
-  position:relative;
-  aspect-ratio:1;
-  border-radius:50%;
-  cursor:pointer;
-  touch-action:manipulation;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  font-family:var(--ui);font-weight:950;font-size:16px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;
+  min-height:56px;padding:14px 32px;border:0;border-radius:var(--pill);cursor:pointer;
+  transition:transform .18s ease,box-shadow .25s ease,filter .25s ease,border-color .2s ease,background .2s ease;
   -webkit-tap-highlight-color:transparent;
-  background:radial-gradient(circle at 50% 50%,rgba(255,43,214,.14),transparent 62%);
 }
-.demo__stage canvas{width:100%;height:100%;display:block}
-.demo__verdict{
-  position:absolute;
-  inset:auto 0 50%;
-  transform:translateY(50%);
-  font-size:1.4rem;
-  font-weight:950;
-  letter-spacing:.22em;
-  text-transform:uppercase;
-  pointer-events:none;
-  opacity:0;
-  color:var(--white);
-}
-.demo__verdict.show{animation:pop .62s ease-out}
-@keyframes pop{
-  0%{opacity:0;transform:translateY(50%) scale(.7)}
-  22%{opacity:1;transform:translateY(50%) scale(1.06)}
-  100%{opacity:0;transform:translateY(50%) scale(1.14)}
-}
-.demo__hint{
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--dim);
-  text-align:center;
-  margin:14px 0 0;
-}
-.demo__hint strong{color:var(--c2);font-weight:900}
+.btn--play{color:#050510;background:linear-gradient(90deg,var(--c1),var(--c2));box-shadow:0 0 26px var(--glow1),0 0 48px var(--glow2)}
+.btn--play:hover,.btn--play:focus-visible{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 0 34px var(--glow1),0 0 64px var(--glow2)}
+.btn--ghost{color:var(--white);font-weight:850;background:rgba(10,10,26,.55);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.btn--ghost:hover,.btn--ghost:focus-visible{transform:translateY(-2px);border-color:var(--c1);background:rgba(0,245,255,.1)}
+.btn--sm{min-height:44px;padding:9px 22px;font-size:13.5px}
+.btn svg{width:14px;height:14px;flex:0 0 auto}
+.actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
 
-@media (min-width:900px){
-  .hero__grid{grid-template-columns:1.05fr .95fr}
-  .demo{width:min(100%,430px)}
+/* ---------- top bar (appears once the hero has scrolled away) ---------- */
+.topbar{
+  position:fixed;inset:0 0 auto 0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:10px var(--pad);background:rgba(5,5,16,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line-soft);transform:translateY(-110%);transition:transform .35s ease;
+}
+.topbar.on{transform:none}
+.topbar__mark{font-weight:950;letter-spacing:.2em;text-transform:uppercase;font-size:.8rem;color:var(--white);text-decoration:none}
+.topbar nav{display:flex;align-items:center;gap:22px}
+.topbar nav a:not(.btn){color:var(--dim);text-decoration:none;font-size:.8rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.topbar nav a:not(.btn):hover{color:var(--c1)}
+@media (max-width:899px){.topbar{display:none}}
+@media (max-width:899px){.trailer .head .btn{display:none}}   /* the dock already carries Play free on phones */
+
+/* =============================== HERO =============================== */
+.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:flex-end;overflow:hidden;isolation:isolate;background:#03030c}
+.hero__plates,.hero__plates img,#sky,.hero__light,.hero__shade{position:absolute;inset:0;width:100%;height:100%}
+.hero__plates{z-index:-5}
+.hero__plates img{object-fit:cover;object-position:50% 40%;opacity:0;transition:opacity 2.4s ease;transform:scale(1.06) translate3d(var(--px,0),var(--py,0),0);will-change:opacity,transform}
+.hero__plates img.on{opacity:.9}
+#sky{z-index:-4;pointer-events:none}
+.hero__light{z-index:-3;pointer-events:none;background:radial-gradient(520px circle at var(--lx,70%) var(--ly,40%),rgba(140,230,255,.16),rgba(180,92,255,.07) 45%,transparent 70%);mix-blend-mode:screen}
+.craft{
+  position:absolute;z-index:-2;left:0;top:0;width:clamp(210px,30vw,430px);height:auto;pointer-events:none;
+  transform:translate3d(-999px,-999px,0);will-change:transform;filter:drop-shadow(0 0 28px rgba(180,92,255,.45));
+}
+.hero__shade{z-index:-1;pointer-events:none;background:
+  linear-gradient(180deg,rgba(5,5,16,.55) 0%,rgba(5,5,16,0) 22%,rgba(5,5,16,0) 46%,rgba(5,5,16,.82) 82%,var(--void) 100%),
+  linear-gradient(90deg,rgba(5,5,16,.72) 0%,rgba(5,5,16,.28) 42%,rgba(5,5,16,0) 68%)}
+.hero__copy{position:relative;padding-top:120px;padding-bottom:clamp(84px,12vh,130px)}
+.kicker{margin:0 0 18px;font-size:.74rem;font-weight:900;letter-spacing:.34em;text-transform:uppercase;color:var(--white);opacity:.86}
+.kicker i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c3);box-shadow:0 0 12px var(--c3);margin-right:10px;vertical-align:1px}
+.hero h1{
+  font-size:clamp(3.4rem,12vw,7.4rem);line-height:.88;letter-spacing:-.01em;text-transform:uppercase;font-weight:950;
+  filter:drop-shadow(0 0 26px rgba(120,150,255,.45));
+}
+.hero h1 span{display:block}
+.hero h1 .void{background:linear-gradient(90deg,#ffd0f3 0%,#ffffff 30%,#9ff4ff 62%,#a8ffb0 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hook{margin:26px 0 0;max-width:30ch;font-size:clamp(1.12rem,2.5vw,1.5rem);line-height:1.35;font-weight:700;color:var(--white)}
+.hook em{font-style:normal;color:#b9c6dc;font-weight:600}
+.note{margin:20px 0 0;font-size:.84rem;color:var(--dim);letter-spacing:.02em}
+.scrollcue{position:absolute;left:50%;bottom:18px;width:44px;height:44px;margin-left:-22px;display:grid;place-items:center;color:var(--white);opacity:.55;text-decoration:none}
+.scrollcue svg{width:20px;height:20px;animation:nudge 2.2s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateY(-3px)}50%{transform:translateY(4px)}}
+@media (max-width:899px){
+  .hero__shade{background:linear-gradient(180deg,rgba(5,5,16,.5) 0%,rgba(5,5,16,0) 20%,rgba(5,5,16,0) 38%,rgba(5,5,16,.86) 70%,var(--void) 100%)}
+  .hero__plates img{object-position:60% 30%}
+  .hero__copy{padding-bottom:84px}
+  .actions .btn{flex:1 1 100%}
+  .scrollcue{display:none}
 }
 
-/* ===================================================================
-   HUD PANELS \u2014 cards, controls, contact. Game geometry: 18px + neon edge.
-   backdrop-filter is reserved for the hero HUD and the sticky dock; a
-   blurred layer behind every card costs real frames on mobile.
-   =================================================================== */
-.cards{display:grid;gap:var(--gap);margin-top:clamp(28px,5vw,46px);grid-template-columns:1fr}
-@media (min-width:620px){.cards{grid-template-columns:1fr 1fr}}
-@media (min-width:1000px){.cards--4{grid-template-columns:repeat(4,1fr)}}
+/* ============================= TRAILER ============================= */
+.trailer{background:linear-gradient(180deg,var(--void),#07071c 50%,var(--void))}
+.trailer .head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 30px}
+.player{
+  position:relative;margin-top:clamp(24px,4vw,40px);aspect-ratio:16/9;border-radius:var(--r);overflow:hidden;background:#000;
+  border:1px solid var(--line);box-shadow:0 30px 90px -30px rgba(0,245,255,.28),0 30px 120px -20px rgba(255,43,214,.22);
+}
+.player video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.player__cover{position:absolute;inset:0;display:grid;place-items:center;border:0;padding:0;margin:0;width:100%;cursor:pointer;color:#fff;background:linear-gradient(180deg,rgba(5,5,16,.15),rgba(5,5,16,.5));font-family:inherit}
+.player__cover[hidden]{display:none}
+.player__btn{
+  display:grid;place-items:center;width:clamp(72px,11vw,104px);aspect-ratio:1;border-radius:50%;
+  background:rgba(5,5,16,.5);border:2px solid rgba(255,255,255,.85);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  box-shadow:0 0 0 0 rgba(0,245,255,.5);animation:ping 2.4s ease-out infinite;transition:transform .2s ease,background .2s ease;
+}
+.player__cover:hover .player__btn,.player__cover:focus-visible .player__btn{transform:scale(1.07);background:rgba(0,245,255,.18)}
+.player__btn svg{width:34%;height:34%;margin-left:6%}
+.player__label{position:absolute;left:0;right:0;bottom:clamp(14px,3vw,26px);text-align:center;font-weight:900;letter-spacing:.26em;text-transform:uppercase;font-size:clamp(.66rem,1.5vw,.8rem);text-shadow:0 2px 12px #000}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(0,245,255,.45)}70%,100%{box-shadow:0 0 0 26px rgba(0,245,255,0)}}
+.player__end{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:16px;background:rgba(3,3,12,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);text-align:center;padding:20px}
+.player__end[hidden]{display:none}
+.player__end p{margin:0;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--white);font-size:clamp(.8rem,2vw,1rem)}
+.player__end .row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.player__bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin-top:16px}
+.player__meta{margin:0;font-size:.84rem;color:var(--dim)}
+.sound{
+  display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:8px 18px;border-radius:var(--pill);cursor:pointer;
+  font:inherit;font-size:.8rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase;color:var(--white);
+  background:rgba(255,255,255,.06);border:1px solid var(--line);
+}
+.sound:hover{border-color:var(--c1)}
+.sound svg{width:17px;height:17px}
+.sound .off{display:none}
+.sound[aria-pressed="false"] .on{display:none}
+.sound[aria-pressed="false"] .off{display:inline}
+.sound[aria-pressed="false"]{color:var(--dim)}
 
-.card{
-  position:relative;
-  background:var(--panel-solid);
-  border:1px solid var(--line);
-  border-radius:var(--r);
-  padding:24px 22px 26px;
-  overflow:hidden;
-  box-shadow:0 0 24px rgba(255,43,214,.10),inset 0 0 24px rgba(255,255,255,.03);
-  transition:transform .22s ease,border-color .22s ease,box-shadow .25s ease;
-}
-.card::before{
-  content:"";
-  position:absolute;
-  inset:0 0 auto;
-  height:2px;
-  background:var(--accent,var(--c1));
-  box-shadow:0 0 14px var(--accent,var(--c1));
-}
-.card:hover{
-  transform:translateY(-4px);
-  border-color:rgba(255,255,255,.22);
-  box-shadow:0 0 30px rgba(0,245,255,.16),inset 0 0 24px rgba(255,255,255,.04);
-}
-.card h3{color:var(--white);margin-bottom:10px}
+/* ============================ SHOWCASE ============================ */
+.tiles{display:grid;gap:var(--gap);margin-top:clamp(28px,5vw,48px);grid-template-columns:1fr}
+@media (min-width:760px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{margin:0;position:relative;border-radius:var(--r);overflow:hidden;background:#07071a;border:1px solid var(--line-soft);transition:transform .35s ease,border-color .35s ease,box-shadow .35s ease}
+.tile:hover{transform:translateY(-4px);border-color:rgba(0,245,255,.4);box-shadow:0 24px 60px -30px rgba(0,245,255,.45)}
+.tile__img{aspect-ratio:16/9;overflow:hidden}
+.tile__img img{width:100%;height:100%;object-fit:cover;transition:transform 1.2s ease}
+.tile:hover .tile__img img{transform:scale(1.05)}
+.tile figcaption{padding:18px 20px 22px}
+.tile .n{font-size:.68rem;font-weight:900;letter-spacing:.28em;color:var(--c1);margin:0 0 8px}
+.tile h3{margin-bottom:8px}
+.tile p{margin:0;color:var(--dim);font-size:.94rem}
+.controls{display:flex;flex-wrap:wrap;gap:10px 26px;margin:clamp(22px,4vw,34px) 0 0;padding:0;list-style:none;color:var(--dim);font-size:.9rem}
+.controls b{color:var(--white);font-weight:800}
+kbd{font-family:var(--ui);font-size:.8em;font-weight:800;color:var(--white);padding:2px 8px;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.06)}
+
+/* ============================== BOSS ============================== */
+.boss{overflow:hidden;isolation:isolate}
+.boss::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(60% 70% at 72% 50%,rgba(176,107,255,.2),transparent 70%)}
+.boss__grid{display:grid;gap:clamp(26px,5vw,60px);align-items:center}
+@media (min-width:900px){.boss__grid{grid-template-columns:1.25fr 1fr}}
+.boss__shot{position:relative;margin:0;border-radius:var(--r);overflow:hidden;border:1px solid rgba(176,107,255,.35);box-shadow:0 30px 100px -30px rgba(176,107,255,.55);aspect-ratio:16/9;background:#06040f}
+.boss__shot img{width:100%;height:100%;object-fit:cover}
+.boss__shot::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(5,5,16,.55))}
+.boss .eyebrow{color:#c9a8ff}
+.boss h2{font-size:clamp(2.2rem,6.4vw,4rem);letter-spacing:.06em}
+.boss__sub{margin:10px 0 0;font-weight:900;letter-spacing:.3em;text-transform:uppercase;font-size:.78rem;color:#c9a8ff}
+.boss__more{margin:22px 0 0;color:var(--dim);font-size:.92rem;font-style:italic}
+
+/* ============================= UNKNOWN ============================= */
+.unknown{text-align:center;overflow:hidden;isolation:isolate}
+.unknown::before{content:"";position:absolute;left:50%;top:50%;width:min(120vw,1100px);aspect-ratio:1;transform:translate(-50%,-50%);z-index:-1;border-radius:50%;
+  background:radial-gradient(closest-side,#000 0 21%,rgba(255,170,90,.32) 22%,rgba(255,90,160,.1) 30%,transparent 60%);opacity:.75}
+.unknown h2{font-size:clamp(1.9rem,6.4vw,4.2rem);max-width:16ch;margin-inline:auto}
+.unknown p{max-width:44ch;margin:22px auto 0;color:var(--text)}
+.unknown .actions{justify-content:center}
+
+/* ====================== ABOUT: THE SIGNAL (comic) ====================== */
+:root{--ink:#15112a;--cap:#ffe14d}
+.strip{display:grid;gap:var(--gap);margin-top:clamp(26px,4vw,40px);grid-template-columns:1fr}
+@media (min-width:820px){.strip{grid-template-columns:repeat(3,1fr)}}
+.panel{margin:0;overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#141032;box-shadow:0 20px 50px -30px #000}
+.cap{margin:0;padding:12px 14px;background:rgba(255,225,77,.94);color:var(--ink);font-weight:850;font-size:.9rem;line-height:1.3}
+.cap b{color:#b0127a;font-weight:950}
+.art{position:relative}
+.art.dark{background:#05040c}
+.art svg{display:block;width:100%;height:auto}
+.bub{position:absolute;background:#fff;color:var(--ink);font-weight:950;font-size:12.5px;line-height:1.15;padding:6px 11px;border-radius:14px;border:2.5px solid var(--ink);white-space:nowrap}
+.bub-l::after{content:"";position:absolute;left:10px;bottom:-9px;border:7px solid transparent;border-top-color:#fff;border-bottom:0}
+.sfx{position:absolute;font-weight:1000;font-style:italic;font-size:clamp(18px,2.4vw,24px);letter-spacing:.02em;color:var(--cap);-webkit-text-stroke:1.5px var(--ink);transform:rotate(-6deg)}
+.zzz{font:italic 900 13px sans-serif;fill:#e8f6ff;opacity:.85}
+.about .lede{color:var(--dim)}
+
+/* ============================= CONTACT ============================= */
+.cards{display:grid;gap:var(--gap);margin-top:clamp(24px,4vw,38px);grid-template-columns:1fr}
+@media (min-width:680px){.cards{grid-template-columns:1fr 1fr}}
+.card{position:relative;display:block;padding:24px;border-radius:var(--r);background:rgba(10,10,28,.6);border:1px solid var(--line-soft);text-decoration:none;transition:transform .25s ease,border-color .25s ease}
+.card::before{content:"";position:absolute;left:24px;right:24px;top:0;height:2px;background:var(--accent,var(--c1));opacity:.8}
+.card:hover{transform:translateY(-3px);border-color:var(--accent,var(--c1))}
+.card h3{margin-bottom:10px}
 .card p{margin:0;color:var(--dim);font-size:.95rem}
-.card__mark{width:32px;height:32px;margin-bottom:16px;color:var(--accent,var(--c1));
-  filter:drop-shadow(0 0 10px currentColor)}
-.card__mark svg{width:100%;height:100%;display:block}
-/* small HUD tag inside a panel, e.g. TIMING / CORE / REALM / SCORE */
-.card__tag{
-  display:inline-block;
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--accent,var(--c1));
-  border:1px solid currentColor;
-  border-radius:var(--pill);
-  padding:3px 10px;
-  margin-bottom:12px;
-  opacity:.9;
-}
 
-/* ===================================================================
-   BOSSES
-   =================================================================== */
-.bosses{display:grid;gap:var(--gap);margin-top:clamp(28px,5vw,46px);grid-template-columns:1fr}
-@media (min-width:680px){.bosses{grid-template-columns:1fr 1fr}}
-
-.boss{
-  display:flex;
-  align-items:center;
-  gap:18px;
-  padding:20px;
-  border:1px solid var(--line);
-  border-radius:var(--r);
-  background:var(--panel-solid);
-  box-shadow:inset 0 0 24px rgba(255,255,255,.03);
-  transition:border-color .22s ease,transform .22s ease,box-shadow .25s ease;
-}
-.boss:hover{
-  transform:translateX(4px);
-  border-color:var(--accent);
-  box-shadow:0 0 26px -6px var(--accent),inset 0 0 24px rgba(255,255,255,.04);
-}
-.boss__glyph{flex:0 0 auto;width:52px;height:52px;color:var(--accent);
-  filter:drop-shadow(0 0 12px currentColor)}
-.boss__glyph svg{width:100%;height:100%;display:block}
-.boss__name{
-  font-size:1.1rem;
-  font-weight:900;
-  letter-spacing:.06em;
-  color:var(--white);
-  text-transform:uppercase;
-  line-height:1.2;
-  margin:0;
-}
-.boss__core{
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--accent);
-  margin:7px 0 0;
-  text-shadow:0 0 10px currentColor;
-}
-.boss__note{font-size:.84rem;color:var(--dim);margin:6px 0 0}
-
-/* ===================================================================
-   SECRET REALMS
-   =================================================================== */
-.realms{display:grid;gap:var(--gap);margin-top:clamp(28px,5vw,46px);grid-template-columns:1fr}
-@media (min-width:620px){.realms{grid-template-columns:repeat(3,1fr)}}
-
-.realm{
-  position:relative;
-  border:1px dashed rgba(125,255,104,.34);
-  border-radius:var(--r);
-  padding:28px 22px;
-  text-align:center;
-  background:rgba(8,8,20,.5);
-  overflow:hidden;
-}
-.realm__lock{
-  font-size:2rem;
-  font-weight:950;
-  letter-spacing:.18em;
-  color:var(--c3);
-  text-shadow:0 0 22px var(--glow3);
-  margin:0;
-}
-.realm__label{
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--dim);
-  margin:12px 0 0;
-}
-.realm__blur{margin:10px 0 0;font-size:.9rem;color:var(--dim);filter:blur(4px);user-select:none}
-
-/* ===================================================================
-   HOW TO PLAY
-   =================================================================== */
-.steps{
-  list-style:none;
-  counter-reset:step;
-  margin:clamp(28px,5vw,46px) 0 0;
-  padding:0;
-  display:grid;
-  gap:2px;
-  border:1px solid var(--line);
-  border-radius:var(--r);
-  overflow:hidden;
-  background:var(--line-soft);
-}
-.steps li{
-  counter-increment:step;
-  display:flex;
-  gap:18px;
-  align-items:baseline;
-  padding:20px 22px;
-  background:var(--panel-solid);
-}
-.steps li::before{
-  content:counter(step,decimal-leading-zero);
-  font-size:12px;
-  font-weight:900;
-  letter-spacing:.16em;
-  color:var(--c2);
-  text-shadow:0 0 12px var(--glow2);
-  flex:0 0 auto;
-}
-.steps li b{color:var(--white);font-weight:800}
-kbd{
-  font-family:var(--ui);
-  font-size:.78em;
-  font-weight:800;
-  border:1px solid var(--line);
-  border-bottom-width:2px;
-  border-radius:8px;
-  padding:2px 8px;
-  color:var(--c1);
-  background:rgba(0,245,255,.08);
-}
-
-.controls{display:grid;gap:var(--gap);margin-top:var(--gap);grid-template-columns:1fr}
-@media (min-width:680px){.controls{grid-template-columns:1fr 1fr}}
-.ctrl{
-  border:1px solid var(--line);
-  border-radius:var(--r);
-  padding:22px;
-  background:var(--panel-solid);
-  box-shadow:inset 0 0 24px rgba(255,255,255,.03);
-}
-.ctrl h3{color:var(--white);display:flex;align-items:center;gap:11px;margin-bottom:16px}
-.ctrl h3 svg{width:19px;height:19px;color:var(--accent,var(--c1));flex:0 0 auto;
-  filter:drop-shadow(0 0 8px currentColor)}
-.ctrl dl{margin:0;display:grid;gap:11px}
-.ctrl div{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
-.ctrl dt{
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--accent,var(--c1));
-  flex:0 0 auto;
-  min-width:78px;
-}
-.ctrl dd{margin:0;font-size:.92rem;color:var(--dim);flex:1 1 150px}
-
-/* ===================================================================
-   SCREENSHOTS \u2014 game capture cards
-   =================================================================== */
-.shots{display:grid;gap:var(--gap);margin-top:clamp(28px,5vw,46px);grid-template-columns:1fr}
-@media (min-width:620px){.shots{grid-template-columns:repeat(3,1fr)}}
-
-.shot{margin:0}
-.shot__tag{
-  display:inline-block;
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:#050510;
-  background:linear-gradient(90deg,var(--c1),var(--c3));
-  box-shadow:0 0 18px var(--glow1);
-  border-radius:var(--pill);
-  padding:4px 12px;
-  margin-bottom:10px;
-}
-.shot__frame{
-  position:relative;
-  aspect-ratio:var(--shot-ratio,16/10);
-  border:1px solid var(--line);
-  border-radius:var(--r);
-  background:
-    radial-gradient(circle at 50% 45%,rgba(0,245,255,.12),transparent 62%),
-    #04040c;
-  box-shadow:
-    0 0 34px -8px var(--glow1),
-    0 0 60px -18px var(--glow2),
-    inset 0 0 24px rgba(255,255,255,.04);
-  overflow:hidden;
-  transition:box-shadow .25s ease,transform .22s ease;
-}
-.shot:hover .shot__frame{
-  transform:translateY(-3px);
-  box-shadow:0 0 44px -6px var(--glow1),0 0 76px -16px var(--glow2),
-             inset 0 0 24px rgba(255,255,255,.05);
-}
-.shot__frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.shot figcaption{font-size:.82rem;color:var(--dim);margin-top:12px;padding-inline:2px}
-
-/* ===================================================================
-   CTA BAND
-   =================================================================== */
-.cta{
-  border:1px solid var(--line);
-  border-radius:var(--r-lg);
-  padding:clamp(32px,6vw,54px) var(--pad);
-  text-align:center;
-  background:
-    radial-gradient(70% 120% at 50% 0%,rgba(255,43,214,.20),transparent 70%),
-    radial-gradient(70% 120% at 50% 100%,rgba(0,245,255,.16),transparent 70%),
-    rgba(8,8,20,.7);
-  box-shadow:inset 0 0 34px rgba(255,255,255,.03);
-}
-.cta h2{font-size:clamp(1.7rem,5vw,2.5rem)}
-.cta p{color:var(--dim);max-width:48ch;margin:16px auto 0}
-.cta .btn{margin-top:26px}
-
-/* ===================================================================
-   CONTACT + FOOTER
-   =================================================================== */
-.contact{display:grid;gap:var(--gap);margin-top:clamp(24px,4vw,38px);grid-template-columns:1fr}
-@media (min-width:680px){.contact{grid-template-columns:1fr 1fr}}
-.contact a.card{text-decoration:none;display:block}
-.contact a.card p{margin-top:10px}
-
-footer{
-  border-top:1px solid var(--line);
-  padding-block:36px calc(36px + env(safe-area-inset-bottom));
-  margin-top:var(--sec);
-}
+/* ============================== FOOTER ============================== */
+footer{border-top:1px solid var(--line-soft);padding:38px 0 110px}
+@media (min-width:900px){footer{padding-bottom:44px}}
 .foot{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
-.foot__mark{
-  font-weight:900;
-  letter-spacing:.22em;
-  text-transform:uppercase;
-  color:var(--white);
-  font-size:.95rem;
-  margin:0;
-  text-shadow:0 0 14px rgba(0,245,255,.35);
-}
+.foot__mark{margin:0;font-weight:950;letter-spacing:.22em;text-transform:uppercase;color:var(--white)}
 .foot nav{display:flex;flex-wrap:wrap;gap:20px}
 .foot nav a{color:var(--dim);text-decoration:none;font-size:.86rem;letter-spacing:.04em}
 .foot nav a:hover{color:var(--c1)}
 .foot__fine{color:var(--dim);font-size:.78rem;margin:22px 0 0;opacity:.72}
 
-/* ===================================================================
-   STICKY MOBILE CTA
-   =================================================================== */
-.dock{
-  position:fixed;
-  left:0;right:0;bottom:0;
-  z-index:40;
-  padding:12px var(--pad) calc(12px + env(safe-area-inset-bottom));
-  background:linear-gradient(180deg,rgba(5,5,16,0),rgba(5,5,16,.94) 32%);
-  -webkit-backdrop-filter:blur(12px);
-  backdrop-filter:blur(12px);
-  transform:translateY(120%);
-  transition:transform .3s ease;
-  pointer-events:none;
-}
-.dock.on{transform:translateY(0);pointer-events:auto}
+/* mobile dock: Play free, always within reach */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:12px var(--pad) calc(12px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg,rgba(5,5,16,0),rgba(5,5,16,.92) 38%);transform:translateY(110%);transition:transform .35s ease;pointer-events:none}
+.dock.on{transform:none;pointer-events:auto}
 .dock .btn{width:100%}
 @media (min-width:900px){.dock{display:none}}
 
-/* ===================================================================
-   MOTION \u2014 content is visible by default and never gated on JS.
-   =================================================================== */
-.rise{opacity:1;transform:none;transition:none}
+/* ---------- section reveals ---------- */
+/* Content is visible by default. The script adds .js-reveal to <html> only when it
+   can also guarantee the reveal (observer present, motion allowed), and a timer
+   reveals everything if the observer never fires. Nothing can stay hidden. */
+.js-reveal .rise{opacity:0;transform:translateY(26px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.js-reveal .rise.in{opacity:1;transform:none}
 
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  *,*::before,*::after{animation:none !important;transition-duration:.01ms !important}
+  .js-reveal .rise{opacity:1;transform:none}
+  .hero__plates img{transform:none}
 }
-
-/* ===================================================================
-   COMIC LAYER (v0.4) — the page now matches the game's comic, The Signal:
-   ink-bordered panels, halftone dots, yellow caption boxes, speech bubbles
-   and sound effects. The game's neon, HUD readouts and pill buttons stay.
-   =================================================================== */
-:root{ --ink:#15112a; --cap:#ffe14d; --paper:#f4f0ff; --panel-c:#141032; }
-body::after{
-  background-image:
-    repeating-radial-gradient(circle at 50% 30%, transparent 0 118px, rgba(0,245,255,.05) 118px 119px, transparent 119px 240px),
-    radial-gradient(rgba(255,255,255,.075) 1px, transparent 1.5px);
-  background-size:auto, 7px 7px;
-}
-/* captions: every eyebrow is a yellow comic caption box */
-.eyebrow{
-  display:inline-flex; width:auto; color:var(--ink); background:var(--cap);
-  border:2.5px solid var(--ink); box-shadow:3px 3px 0 var(--ink); padding:5px 11px;
-  font-size:10.5px; font-weight:950; text-shadow:none; transform:rotate(-1.2deg); margin-bottom:18px;
-}
-.eyebrow::after{display:none}
-h2{
-  font-style:italic; font-weight:1000; letter-spacing:.015em;
-  text-shadow:3px 3px 0 var(--c2), 6px 6px 0 #000, 0 0 22px rgba(0,245,255,.25);
-}
-h3{font-style:italic}
-.hero h1{
-  font-style:italic; font-weight:1000; letter-spacing:.02em;
-  -webkit-text-stroke:3px var(--ink);
-  text-shadow:5px 5px 0 var(--c2), 10px 10px 0 #000, 0 0 40px rgba(0,245,255,.45);
-}
-.hero__tag{
-  color:var(--ink); background:var(--cap); border:2.5px solid var(--ink); border-radius:3px;
-  box-shadow:3px 3px 0 var(--ink); transform:rotate(-1.5deg);
-}
-.hero__sub{
-  position:relative; display:inline-block; background:#fff; color:var(--ink);
-  border:3px solid var(--ink); border-radius:22px; padding:12px 18px; box-shadow:4px 4px 0 rgba(0,0,0,.6);
-  margin-top:26px;
-}
-.hero__sub::after{
-  content:""; position:absolute; left:34px; bottom:-14px;
-  border:11px solid transparent; border-top-color:var(--ink); border-bottom:0;
-}
-/* buttons: the game's neon pill, inked */
-.btn--play{ border:3px solid var(--ink); box-shadow:4px 4px 0 var(--ink), 0 0 26px var(--glow1), 0 0 44px var(--glow2); }
-.btn--play:hover,.btn--play:focus-visible{ box-shadow:6px 6px 0 var(--ink), 0 0 34px var(--glow1), 0 0 60px var(--glow2); }
-.btn--ghost{ color:var(--ink); background:#fff; border:3px solid var(--ink); box-shadow:4px 4px 0 rgba(0,0,0,.65); font-weight:950; }
-.btn--ghost:hover,.btn--ghost:focus-visible{ background:var(--cap); border-color:var(--ink); }
-/* panels: cards, bosses, controls, realms, shots and the CTA are comic panels */
-.card,.boss,.ctrl,.realm,.cta,.panel,.steps li{
-  border:3px solid var(--paper); border-radius:6px;
-  background:radial-gradient(rgba(255,255,255,.085) 1px, transparent 1.4px) 0 0/6px 6px, var(--panel-c);
-  box-shadow:5px 5px 0 rgba(0,0,0,.7), 0 0 26px -10px var(--accent, var(--c2));
-}
-.card:nth-child(odd),.boss:nth-child(odd),.ctrl:nth-child(odd),.realm:nth-child(odd),.panel:nth-child(odd){transform:rotate(-.6deg)}
-.card:nth-child(even),.boss:nth-child(even),.ctrl:nth-child(even),.realm:nth-child(even),.panel:nth-child(even){transform:rotate(.5deg)}
-.card:hover{transform:translateY(-4px) rotate(0deg); box-shadow:7px 7px 0 rgba(0,0,0,.7), 0 0 30px -6px var(--accent, var(--c1))}
-.boss:hover{transform:translateY(-3px) rotate(0deg); box-shadow:7px 7px 0 rgba(0,0,0,.7), 0 0 30px -6px var(--accent)}
-.card::before{height:4px}
-.card .card__tag{ color:var(--ink); background:var(--cap); border:2px solid var(--ink); border-radius:3px; opacity:1; box-shadow:2px 2px 0 var(--ink); }
-.card p{color:rgba(232,228,255,.82)}
-/* comic bits shared with the game: captions, bubbles, sound effects */
-.cap{ margin:0; background:var(--cap); color:var(--ink); font-weight:850; font-size:.9rem; line-height:1.38; padding:8px 12px; border-bottom:3px solid var(--ink); }
-.cap b{color:#b0127a; font-weight:950}
-.art{position:relative}
-.art.dark{background:#05040c}
-.art svg{display:block; width:100%; height:auto}
-.bub{ position:absolute; background:#fff; color:var(--ink); font-weight:950; font-size:12.5px; line-height:1.2; padding:5px 10px;
-  border:2.5px solid var(--ink); border-radius:14px; box-shadow:2px 2px 0 rgba(0,0,0,.45); white-space:nowrap; }
-.bub-s{font-size:10.5px; padding:4px 8px; white-space:normal; max-width:70%}
-.bub-l::after{ content:""; position:absolute; left:10px; bottom:-9px; border:7px solid transparent; border-top-color:var(--ink); border-bottom:0; }
-.sfx{ position:absolute; font-weight:1000; font-style:italic; font-size:clamp(18px,2.4vw,24px); letter-spacing:1px; color:var(--cap);
-  -webkit-text-stroke:1.4px var(--ink); text-shadow:2px 2px 0 var(--ink); transform:rotate(-8deg); pointer-events:none; }
-.sfx-g{color:var(--c3)}
-.zzz{font:italic 900 13px sans-serif; fill:#e8f6ff; opacity:.85}
-/* hero demo: the saucer sits on the target and bounces when you hit */
-.demo__stage{overflow:visible}
-.demo__ufo{ position:absolute; left:50%; top:50%; width:44%; aspect-ratio:124/88; transform:translate(-50%,-58%); pointer-events:none;
-  animation:hover 3.2s ease-in-out infinite; }
-.demo__ufo.bump{animation:bump .32s ease-out, hover 3.2s ease-in-out .32s infinite}
-@keyframes hover{0%,100%{transform:translate(-50%,-58%) rotate(-2deg)}50%{transform:translate(-50%,-63%) rotate(2deg)}}
-@keyframes bump{0%{transform:translate(-50%,-50%) scale(1.06,.94) rotate(-5deg)}55%{transform:translate(-50%,-64%) scale(.97,1.03) rotate(3deg)}100%{transform:translate(-50%,-58%) rotate(-2deg)}}
-.demo .bub{left:auto; right:4%; top:96px; transform:rotate(3deg); z-index:2}
-/* story strip */
-.strip{display:grid; gap:var(--gap); margin-top:clamp(26px,4vw,40px); grid-template-columns:1fr}
-@media (min-width:820px){.strip{grid-template-columns:repeat(3,1fr)}}
-.panel{margin:0; overflow:hidden}
-/* the Warden Files */
-.boss{flex-direction:column; align-items:stretch; gap:0; padding:0; overflow:hidden}
-.boss__art{position:relative; aspect-ratio:16/9; background:radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 65%)}
-.boss__art svg{position:absolute; inset:6% 0 0; width:100%; height:94%}
-.boss__art .bub{top:8px; left:10px}
-.boss > div:last-child{padding:12px 16px 16px}
-.boss__sub{font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin:4px 0 0}
-/* secret realms: shadows from the comic's rumors panel */
-.realm{border-style:solid; background:#05040c}
-.realm svg{display:block; width:100%; max-width:240px; margin:0 auto 6px; height:auto}
-.realm__label{text-transform:none; letter-spacing:.01em; font-size:.92rem; font-style:italic; color:rgba(232,228,255,.82)}
-/* how to play: five numbered panels */
-.steps{ grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; border:0; background:none; overflow:visible }
-.steps li{ flex-direction:column; gap:10px; padding:18px 18px 20px; align-items:flex-start }
-.steps li::before{
-  font-size:15px; font-weight:1000; color:var(--ink); text-shadow:none; background:var(--cap);
-  border:2.5px solid var(--ink); border-radius:50%; width:40px; height:40px; display:grid; place-items:center;
-  box-shadow:2px 2px 0 var(--ink); letter-spacing:0;
-}
-.steps li:nth-child(odd){transform:rotate(-.6deg)} .steps li:nth-child(even){transform:rotate(.5deg)}
-/* screenshots as panels */
-.shot__tag{ color:var(--ink); background:var(--cap); border:2.5px solid var(--ink); border-radius:3px; box-shadow:2px 2px 0 var(--ink); transform:rotate(-1.4deg) }
-.shot__frame{ border:3px solid var(--paper); border-radius:6px; box-shadow:5px 5px 0 rgba(0,0,0,.7), 0 0 34px -10px var(--glow1) }
-.shot figcaption{color:rgba(232,228,255,.75)}
-/* closing panel */
-.cta__art{position:relative; max-width:420px; margin:0 auto 6px}
-.cta__art svg{display:block; width:100%; height:auto}
-.cta__art .bub{right:4%; top:2%}
-.tbc{margin:0 0 14px; font-size:11px; font-weight:1000; letter-spacing:.3em; text-transform:uppercase; color:var(--cap)}
-.foot__mark{font-style:italic}
-@media (prefers-reduced-motion:reduce){.demo__ufo,.demo__ufo.bump{animation:none}}
 </style>
 </head>
 
 <body>
 <a class="skip" href="#main">Skip to content</a>
-      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-        <defs>
-          <linearGradient id="cxGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9ddff" stop-opacity="0.32"/><stop offset="1" stop-color="#7a4bd6" stop-opacity="0.18"/></linearGradient>
-          <radialGradient id="cxCore" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff"/><stop offset="0.4" stop-color="#ff7ef0"/><stop offset="1" stop-color="#ff2bd6" stop-opacity="0"/></radialGradient>
-          <pattern id="cxDots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1" fill="#fff" fill-opacity="0.09"/></pattern>
-          <symbol id="cxSaucer" viewBox="-62 -44 124 88">
-            <ellipse cx="0" cy="2" rx="58" ry="10" fill="none" stroke="#b45cff" stroke-width="3" opacity="0.55"/>
-            <ellipse cx="0" cy="2" rx="50" ry="7.5" fill="none" stroke="#46eeff" stroke-width="1.6" opacity="0.6"/>
-            <path d="M-9 12 L9 12 L22 40 L-22 40 Z" fill="#46eeff" opacity="0.16"/>
-            <ellipse cx="0" cy="27" rx="13" ry="3" fill="none" stroke="#46eeff" stroke-width="1.5" opacity="0.7"/>
-            <ellipse cx="0" cy="36" rx="18" ry="3.6" fill="none" stroke="#46eeff" stroke-width="1.5" opacity="0.5"/>
-            <path d="M-44 1 Q0 22 44 1 Z" fill="#241d38" stroke="#b45cff" stroke-width="2"/>
-            <ellipse cx="0" cy="12" rx="10" ry="3.4" fill="url(#cxCore)"/>
-            <ellipse cx="0" cy="0" rx="46" ry="9" fill="#3b3456" stroke="#c78bff" stroke-width="2.4"/>
-            <ellipse cx="0" cy="-2.5" rx="30" ry="5.5" fill="#5a5274"/>
-            <g fill="#5ef2ff"><circle cx="-36" cy="4.5" r="1.9"/><circle cx="-24" cy="6.5" r="1.9"/><circle cx="-12" cy="7.6" r="1.9"/><circle cx="0" cy="8" r="1.9"/><circle cx="12" cy="7.6" r="1.9"/><circle cx="24" cy="6.5" r="1.9"/><circle cx="36" cy="4.5" r="1.9"/></g>
-            <!-- the pilot: you -->
-            <circle cx="0" cy="-13" r="9.5" fill="#86f5d4"/>
-            <path d="M-9.5 -16 A9.5 9.5 0 0 1 9.5 -16" fill="none" stroke="#1a1430" stroke-width="2.4"/>
-            <rect x="-12.5" y="-17" width="4.6" height="7" rx="2" fill="#ff2bd6"/><rect x="7.9" y="-17" width="4.6" height="7" rx="2" fill="#ff2bd6"/>
-            <ellipse cx="-3.4" cy="-13.5" rx="2.6" ry="3.2" fill="#fff"/><ellipse cx="3.4" cy="-13.5" rx="2.6" ry="3.2" fill="#fff"/>
-            <circle cx="-3" cy="-13" r="1.5" fill="#111"/><circle cx="3.8" cy="-13" r="1.5" fill="#111"/>
-            <circle cx="-6.4" cy="-9.6" r="1.3" fill="#ff8fc8" opacity="0.8"/><circle cx="6.4" cy="-9.6" r="1.3" fill="#ff8fc8" opacity="0.8"/>
-            <path d="M-2.6 -8.6 Q0 -6.4 2.6 -8.6" fill="none" stroke="#111" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M-21 -3 A21 19 0 0 1 21 -3 Z" fill="url(#cxGlass)" stroke="#efe6ff" stroke-width="1.6"/>
-            <path d="M-13 -13 Q-9 -19 -3 -20" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="0.8"/>
-          </symbol>
-          <symbol id="cxCube" viewBox="-52 -50 104 100">
-            <polygon points="-30,-14 -16,-30 34,-30 20,-14" fill="#1a2c0c" stroke="#a6ff3d" stroke-width="3" stroke-linejoin="round"/>
-            <polygon points="20,-14 34,-30 34,22 20,38" fill="#10200a" stroke="#a6ff3d" stroke-width="3" stroke-linejoin="round"/>
-            <rect x="-30" y="-14" width="50" height="52" fill="#0d1a08" stroke="#a6ff3d" stroke-width="3.4" stroke-linejoin="round"/>
-            <rect x="-23" y="-5" width="36" height="38" fill="none" stroke="#a6ff3d" stroke-width="1.2" stroke-opacity="0.4"/>
-            <rect x="-21" y="2" width="11" height="11" fill="#ffb21e"/><rect x="0" y="2" width="11" height="11" fill="#ffb21e"/>
-            <rect x="-17" y="7" width="4" height="4" fill="#fff"/><rect x="4" y="7" width="4" height="4" fill="#fff"/>
-            <path d="M-23 -4 L-11 1 M14 -4 L2 1" stroke="#eafff0" stroke-width="3" stroke-linecap="round"/>
-            <path d="M-15 25 L6 25" stroke="#ffb21e" stroke-width="3" stroke-linecap="round"/>
-            <rect x="26" y="0" width="4" height="4" fill="#ffb21e"/>
-          </symbol>
-          <symbol id="cxHex" viewBox="-52 -50 104 100">
-            <polygon points="-48,-8 -32,-22 -32,14" fill="#062430" stroke="#00f5ff" stroke-width="3" stroke-linejoin="round"/>
-            <polygon points="48,-8 32,-22 32,14" fill="#062430" stroke="#00f5ff" stroke-width="3" stroke-linejoin="round"/>
-            <polygon points="0,-31 27,-15.5 27,15.5 0,31 -27,15.5 -27,-15.5" fill="#0a1d2e" stroke="#00f5ff" stroke-width="3.4" stroke-linejoin="round"/>
-            <polygon points="0,-20 17.3,-10 17.3,10 0,20 -17.3,10 -17.3,-10" fill="none" stroke="#ff2bd6" stroke-width="2.4"/>
-            <circle cx="0" cy="2" r="9.5" fill="#7dff68"/><circle cx="1" cy="3" r="4.2" fill="#0b2a10"/><circle cx="-2.5" cy="-1.5" r="2" fill="#fff"/>
-            <path d="M-13 -13 L-3 -8.5 M13 -13 L3 -8.5" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-          </symbol>
-          <symbol id="cxTri" viewBox="-52 -54 104 100">
-            <g stroke="#ff4fa3" stroke-width="2" fill="#3a0a1c" opacity="0.9">
-              <path d="M0 0 L46 -10 L0 -4 Z"/><path d="M0 0 L-24 40 L-3 2 Z"/><path d="M0 0 L-22 -42 L-4 -2 Z"/>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="cxGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9ddff" stop-opacity="0.32"/><stop offset="1" stop-color="#7a4bd6" stop-opacity="0.18"/></linearGradient>
+    <radialGradient id="cxCore" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff"/><stop offset="0.4" stop-color="#ff7ef0"/><stop offset="1" stop-color="#ff2bd6" stop-opacity="0"/></radialGradient>
+    <pattern id="cxDots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1" fill="#fff" fill-opacity="0.09"/></pattern>
+    <radialGradient id="cxCorona" cx="0.5" cy="0.5" r="0.5"><stop offset="0.5" stop-color="#ffe9a8" stop-opacity="0.75"/><stop offset="0.72" stop-color="#b026ff" stop-opacity="0.28"/><stop offset="1" stop-color="#b026ff" stop-opacity="0"/></radialGradient>
+<symbol id="cxSaucer" viewBox="-62 -44 124 88">
+      <ellipse cx="0" cy="2" rx="58" ry="10" fill="none" stroke="#b45cff" stroke-width="3" opacity="0.55"/>
+      <ellipse cx="0" cy="2" rx="50" ry="7.5" fill="none" stroke="#46eeff" stroke-width="1.6" opacity="0.6"/>
+      <path d="M-9 12 L9 12 L22 40 L-22 40 Z" fill="#46eeff" opacity="0.16"/>
+      <ellipse cx="0" cy="27" rx="13" ry="3" fill="none" stroke="#46eeff" stroke-width="1.5" opacity="0.7"/>
+      <ellipse cx="0" cy="36" rx="18" ry="3.6" fill="none" stroke="#46eeff" stroke-width="1.5" opacity="0.5"/>
+      <path d="M-44 1 Q0 22 44 1 Z" fill="#241d38" stroke="#b45cff" stroke-width="2"/>
+      <ellipse cx="0" cy="12" rx="10" ry="3.4" fill="url(#cxCore)"/>
+      <ellipse cx="0" cy="0" rx="46" ry="9" fill="#3b3456" stroke="#c78bff" stroke-width="2.4"/>
+      <ellipse cx="0" cy="-2.5" rx="30" ry="5.5" fill="#5a5274"/>
+      <g fill="#5ef2ff"><circle cx="-36" cy="4.5" r="1.9"/><circle cx="-24" cy="6.5" r="1.9"/><circle cx="-12" cy="7.6" r="1.9"/><circle cx="0" cy="8" r="1.9"/><circle cx="12" cy="7.6" r="1.9"/><circle cx="24" cy="6.5" r="1.9"/><circle cx="36" cy="4.5" r="1.9"/></g>
+      <!-- the pilot: you -->
+      <circle cx="0" cy="-13" r="9.5" fill="#86f5d4"/>
+      <path d="M-9.5 -16 A9.5 9.5 0 0 1 9.5 -16" fill="none" stroke="#1a1430" stroke-width="2.4"/>
+      <rect x="-12.5" y="-17" width="4.6" height="7" rx="2" fill="#ff2bd6"/><rect x="7.9" y="-17" width="4.6" height="7" rx="2" fill="#ff2bd6"/>
+      <ellipse cx="-3.4" cy="-13.5" rx="2.6" ry="3.2" fill="#fff"/><ellipse cx="3.4" cy="-13.5" rx="2.6" ry="3.2" fill="#fff"/>
+      <circle cx="-3" cy="-13" r="1.5" fill="#111"/><circle cx="3.8" cy="-13" r="1.5" fill="#111"/>
+      <circle cx="-6.4" cy="-9.6" r="1.3" fill="#ff8fc8" opacity="0.8"/><circle cx="6.4" cy="-9.6" r="1.3" fill="#ff8fc8" opacity="0.8"/>
+      <path d="M-2.6 -8.6 Q0 -6.4 2.6 -8.6" fill="none" stroke="#111" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M-21 -3 A21 19 0 0 1 21 -3 Z" fill="url(#cxGlass)" stroke="#efe6ff" stroke-width="1.6"/>
+      <path d="M-13 -13 Q-9 -19 -3 -20" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="0.8"/>
+    </symbol>
+    <symbol id="cxCube" viewBox="-52 -50 104 100">
+      <polygon points="-30,-14 -16,-30 34,-30 20,-14" fill="#1a2c0c" stroke="#a6ff3d" stroke-width="3" stroke-linejoin="round"/>
+      <polygon points="20,-14 34,-30 34,22 20,38" fill="#10200a" stroke="#a6ff3d" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="-30" y="-14" width="50" height="52" fill="#0d1a08" stroke="#a6ff3d" stroke-width="3.4" stroke-linejoin="round"/>
+      <rect x="-23" y="-5" width="36" height="38" fill="none" stroke="#a6ff3d" stroke-width="1.2" stroke-opacity="0.4"/>
+      <rect x="-21" y="2" width="11" height="11" fill="#ffb21e"/><rect x="0" y="2" width="11" height="11" fill="#ffb21e"/>
+      <rect x="-17" y="7" width="4" height="4" fill="#fff"/><rect x="4" y="7" width="4" height="4" fill="#fff"/>
+      <path d="M-23 -4 L-11 1 M14 -4 L2 1" stroke="#eafff0" stroke-width="3" stroke-linecap="round"/>
+      <path d="M-15 25 L6 25" stroke="#ffb21e" stroke-width="3" stroke-linecap="round"/>
+      <rect x="26" y="0" width="4" height="4" fill="#ffb21e"/>
+    </symbol>
+    <symbol id="cxHex" viewBox="-52 -50 104 100">
+      <polygon points="-48,-8 -32,-22 -32,14" fill="#062430" stroke="#00f5ff" stroke-width="3" stroke-linejoin="round"/>
+      <polygon points="48,-8 32,-22 32,14" fill="#062430" stroke="#00f5ff" stroke-width="3" stroke-linejoin="round"/>
+      <polygon points="0,-31 27,-15.5 27,15.5 0,31 -27,15.5 -27,-15.5" fill="#0a1d2e" stroke="#00f5ff" stroke-width="3.4" stroke-linejoin="round"/>
+      <polygon points="0,-20 17.3,-10 17.3,10 0,20 -17.3,10 -17.3,-10" fill="none" stroke="#ff2bd6" stroke-width="2.4"/>
+      <circle cx="0" cy="2" r="9.5" fill="#7dff68"/><circle cx="1" cy="3" r="4.2" fill="#0b2a10"/><circle cx="-2.5" cy="-1.5" r="2" fill="#fff"/>
+      <path d="M-13 -13 L-3 -8.5 M13 -13 L3 -8.5" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="cxTri" viewBox="-52 -54 104 100">
+      <g stroke="#ff4fa3" stroke-width="2" fill="#3a0a1c" opacity="0.9">
+        <path d="M0 0 L46 -10 L0 -4 Z"/><path d="M0 0 L-24 40 L-3 2 Z"/><path d="M0 0 L-22 -42 L-4 -2 Z"/>
+      </g>
+      <polygon points="0,-30 30,22 -30,22" fill="#2a0710" stroke="#ff2e4d" stroke-width="3.4" stroke-linejoin="round"/>
+      <path d="M-11 -32 L-11 -44 L-5 -38 L0 -47 L5 -38 L11 -44 L11 -32 Z" fill="#ffd23d" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/>
+      <ellipse cx="-7" cy="4" rx="4.4" ry="3.6" fill="#fff"/><ellipse cx="7" cy="4" rx="4.4" ry="3.6" fill="#fff"/>
+      <circle cx="-6.4" cy="2.6" r="1.8" fill="#111"/><circle cx="7.6" cy="2.6" r="1.8" fill="#111"/>
+      <path d="M-12 1.8 L-2.6 2.6 M12 1.8 L2.6 2.6" stroke="#ffd23d" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M-6 12 Q-3 9 0 11.5 Q3 9 6 12" fill="none" stroke="#ffd23d" stroke-width="1.8" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="cxPrism" viewBox="-50 -50 100 100">
+      <g stroke-width="2.2" stroke-linecap="round"><path d="M-48 -9 L-12 -5" stroke="#ff2e4d"/><path d="M-48 -6.6 L-12 -3.6" stroke="#ff9a3d"/><path d="M-48 -4.2 L-12 -2.2" stroke="#ffd23d"/><path d="M-48 -1.8 L-12 -0.8" stroke="#7dff68"/><path d="M-48 0.6 L-12 0.6" stroke="#5ef2ff"/><path d="M-48 3 L-12 2" stroke="#b06bff"/></g>
+      <path d="M-22 -1 A22 5 0 0 1 22 -1" fill="none" stroke="#eafff0" stroke-width="1.3" stroke-linecap="round" opacity="0.5"/>
+      <g stroke="#c39bff" stroke-width="2" stroke-linejoin="round">
+      <polygon points="0,-46 -17,-3 -3,3" fill="#4a2386"/><polygon points="0,-46 -3,3 17,-3" fill="#32176a"/>
+      <polygon points="-17,-3 -3,3 0,46" fill="#241050"/><polygon points="-3,3 17,-3 0,46" fill="#1a0b3c"/>
+      </g>
+      <path d="M-22 -1 A22 5 0 0 0 22 -1" fill="none" stroke="#eafff0" stroke-width="1.3" stroke-linecap="round" opacity="0.8"/>
+      <circle cx="-4.5" cy="-8" r="2.5" fill="#fff"/><circle cx="6.5" cy="-8" r="2.5" fill="#fff"/>
+      <g fill="#32176a" stroke="#c39bff" stroke-width="1.5" stroke-linejoin="round"><polygon points="-33,-22 -29,-13 -33,-6 -37,-14"/><polygon points="30,-28 34,-19 30,-12 26,-20"/><polygon points="35,10 39,19 35,27 31,18"/><polygon points="-27,16 -23,24 -27,31 -31,23"/></g>
+    </symbol>
+    <symbol id="cxEclipse" viewBox="-52 -52 104 104">
+            <circle cx="0" cy="0" r="50" fill="url(#cxCorona)"/>
+            <g fill="none" stroke-linecap="round" stroke-width="3.2">
+            <path d="M-46 0 A46 21 0 0 1 46 0" transform="rotate(-20)" stroke="#ffd23d" stroke-dasharray="22 9 36 9 14 9"/>
+            <path d="M-43 0 A43 24 0 0 1 43 0" transform="rotate(24)" stroke="#b026ff" stroke-dasharray="30 10 16 8 28 10"/>
             </g>
-            <polygon points="0,-30 30,22 -30,22" fill="#2a0710" stroke="#ff2e4d" stroke-width="3.4" stroke-linejoin="round"/>
-            <path d="M-11 -32 L-11 -44 L-5 -38 L0 -47 L5 -38 L11 -44 L11 -32 Z" fill="#ffd23d" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/>
-            <ellipse cx="-7" cy="4" rx="4.4" ry="3.6" fill="#fff"/><ellipse cx="7" cy="4" rx="4.4" ry="3.6" fill="#fff"/>
-            <circle cx="-6.4" cy="2.6" r="1.8" fill="#111"/><circle cx="7.6" cy="2.6" r="1.8" fill="#111"/>
-            <path d="M-12 1.8 L-2.6 2.6 M12 1.8 L2.6 2.6" stroke="#ffd23d" stroke-width="2.4" stroke-linecap="round"/>
-            <path d="M-6 12 Q-3 9 0 11.5 Q3 9 6 12" fill="none" stroke="#ffd23d" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="0" cy="0" r="26" fill="#060009" stroke="#ffd23d" stroke-width="2.6"/>
+            <path d="M-18 0 Q0 -15 18 0 Q0 14 -18 0 Z" fill="#ffd23d" stroke="#fff3b0" stroke-width="1.4" stroke-linejoin="round"/>
+            <ellipse cx="0" cy="0" rx="3.2" ry="9.4" fill="#060009"/>
+            <g fill="none" stroke-linecap="round" stroke-width="3.2">
+            <path d="M-46 0 A46 21 0 0 0 46 0" transform="rotate(-20)" stroke="#ffd23d" stroke-dasharray="14 10 30 9 24 10 18 9"/>
+            <path d="M-43 0 A43 24 0 0 0 43 0" transform="rotate(24)" stroke="#b026ff" stroke-dasharray="26 9 12 9 34 10"/>
+            </g>
           </symbol>
-          <symbol id="cxPrism" viewBox="-50 -50 100 100">
-            <path d="M-46 -4 L-20 -2" stroke="#ff2e4d" stroke-width="3"/><path d="M-46 0 L-20 1" stroke="#ffd23d" stroke-width="3"/><path d="M-46 4 L-20 4" stroke="#5ef2ff" stroke-width="3"/>
-            <polygon points="-18,-26 0,-36 18,-26 0,-16" fill="#6a3ab0" stroke="#7dff68" stroke-width="2" stroke-linejoin="round"/>
-            <polygon points="-18,-26 0,-16 0,34 -18,24" fill="#2a1250" stroke="#7dff68" stroke-width="2" stroke-linejoin="round"/>
-            <polygon points="18,-26 0,-16 0,34 18,24" fill="#3a1866" stroke="#7dff68" stroke-width="2" stroke-linejoin="round"/>
-            <circle cx="-8" cy="2" r="2.4" fill="#fff"/><circle cx="8" cy="2" r="2.4" fill="#fff"/>
-            <path d="M-4 11 L4 11" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
-          </symbol>
-          <symbol id="cxEclipse" viewBox="-52 -52 104 104">
-            <g fill="#ffd23d"><polygon points="0,-50 5,-34 -5,-34"/><polygon points="0,50 5,34 -5,34"/><polygon points="-50,0 -34,5 -34,-5"/><polygon points="50,0 34,5 34,-5"/>
-              <polygon points="-35,-35 -21,-27 -27,-21"/><polygon points="35,35 21,27 27,21"/><polygon points="35,-35 27,-21 21,-27"/><polygon points="-35,35 -27,21 -21,27"/></g>
-            <circle cx="0" cy="0" r="31" fill="none" stroke="#ff2e4d" stroke-width="3"/>
-            <circle cx="0" cy="0" r="26" fill="#060009" stroke="#b026ff" stroke-width="2"/>
-            <path d="M-15 -8 Q-9 -14 -3 -8 Q-9 -10 -15 -8 Z M15 -8 Q9 -14 3 -8 Q9 -10 15 -8 Z" fill="#ffd23d" stroke="#ffd23d" stroke-width="1.6" stroke-linejoin="round"/>
-            <path d="M-16 4 Q0 22 16 4 Z" fill="#170012" stroke="#ffd23d" stroke-width="1.8"/>
-            <path d="M-12 7 L-9 11 L-6 8 L-3 12 L0 8.5 L3 12 L6 8 L9 11 L12 7" fill="none" stroke="#ffd23d" stroke-width="1.4"/>
-          </symbol>
-          <symbol id="cxPlanet" viewBox="-30 -30 60 60">
-            <circle r="24" fill="#3b7fb0" stroke="#bff3ff" stroke-width="1.6"/>
-            <path d="M-20 -6 Q0 -12 20 -6" fill="none" stroke="#9ff4ff" stroke-width="3" opacity="0.4"/>
-            <path d="M-11 2 Q-7 5 -3 2 M3 2 Q7 5 11 2" fill="none" stroke="#08213a" stroke-width="2" stroke-linecap="round"/>
-            <path d="M-3 10 Q0 12 3 10" fill="none" stroke="#08213a" stroke-width="1.6" stroke-linecap="round"/>
-          </symbol>
-        </defs>
-      </svg>
+    <symbol id="cxPlanet" viewBox="-30 -30 60 60">
+      <circle r="24" fill="#3b7fb0" stroke="#bff3ff" stroke-width="1.6"/>
+      <path d="M-20 -6 Q0 -12 20 -6" fill="none" stroke="#9ff4ff" stroke-width="3" opacity="0.4"/>
+      <path d="M-11 2 Q-7 5 -3 2 M3 2 Q7 5 11 2" fill="none" stroke="#08213a" stroke-width="2" stroke-linecap="round"/>
+      <path d="M-3 10 Q0 12 3 10" fill="none" stroke="#08213a" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
 
-
+<div class="topbar" id="topbar">
+  <a class="topbar__mark" href="#top">Rhythm Void</a>
+  <nav aria-label="Primary">
+    <a href="#trailer">Trailer</a>
+    <a href="#how-to-play">How it plays</a>
+    <a href="#story">About</a>
+    <a href="#feedback">Contact</a>
+    <a class="btn btn--play btn--sm" href="/play/" data-event="play_free_click" data-location="top_bar">Play free</a>
+  </nav>
+</div>
 
 <main id="main">
 
-  <!-- ============================ 1. HERO ============================ -->
-  <header class="hero">
-    <div class="wrap hero__grid">
-      <div>
-        <p class="hero__tag">Public Beta · Free in your browser</p>
-        <h1>Rhythm<br>Void</h1>
-        <p class="hero__sub">A rhythm arcade game where every tap keeps you alive.</p>
-        <p class="hero__copy">Fight bosses, unlock void powers, discover hidden realms, and chase your weekly best.</p>
-
-        <!-- ==================== 2. PLAY FREE CTA ==================== -->
-        <div class="hero__actions">
-          <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="hero">Play free</a>
-          <a class="btn btn--ghost" href="#how-to-play">How to play</a>
-        </div>
-        <p class="hero__note"><b>No download. No account.</b> Play instantly in your browser.</p>
-      </div>
-
-      <!-- signature element: a live, tappable ring — the core mechanic itself -->
-      <div class="demo" style="position:relative">
-        <!-- HUD readout, driven by the live demo below — real values, not decoration -->
-        <div class="demo__hud">
-          <div class="demo__cell">
-            <p class="demo__k">Combo</p>
-            <p class="demo__v" id="hudCombo">0</p>
-          </div>
-          <div class="demo__cell">
-            <p class="demo__k">Last</p>
-            <p class="demo__v" id="hudLast">—</p>
-          </div>
-          <div class="demo__cell">
-            <p class="demo__k">Best</p>
-            <p class="demo__v" id="hudBest">0</p>
-          </div>
-        </div>
-        <span class="bub bub-l" aria-hidden="true">Try it!</span>
-        <div class="demo__stage" id="stage" role="button" tabindex="0" aria-label="Practice ring. Tap or press Enter when the ring meets the target.">
-          <canvas id="pulse" aria-hidden="true"></canvas>
-          <svg class="demo__ufo" id="demoUfo" aria-hidden="true"><use href="#cxSaucer" width="100%" height="100%"/></svg>
-          <p class="demo__verdict" id="verdict" aria-live="polite"></p>
-        </div>
-        <p class="demo__hint">Try it — tap when the ring hits the <strong>target</strong></p>
-      </div>
+  <!-- ============================ 1. HERO ============================
+       Real environment plates from the game cross-fade behind a live layer:
+       a star field with depth, rings closing on the craft in time, and a
+       light that follows the pointer. The craft is the game's own craft. -->
+  <header class="hero" id="top">
+    <div class="hero__plates" id="plates" aria-hidden="true">
+      <img class="on" src="assets/landing/hero-space.webp" alt="" width="1920" height="1080" fetchpriority="high" decoding="async">
+      <img data-src="assets/landing/hero-ocean.webp" alt="" width="1920" height="1080" decoding="async">
+      <img data-src="assets/landing/hero-egypt.webp" alt="" width="1920" height="1080" decoding="async">
     </div>
+    <canvas id="sky" aria-hidden="true"></canvas>
+    <div class="hero__light" id="light" aria-hidden="true"></div>
+    <img class="craft" id="craft" src="assets/landing/craft.webp" alt="" width="860" height="433" decoding="async">
+    <div class="hero__shade" aria-hidden="true"></div>
+
+    <div class="wrap hero__copy">
+      <p class="kicker"><i></i>Free in your browser</p>
+      <h1><span>Rhythm</span><span class="void">Void</span></h1>
+      <p class="hook">Every beat keeps you alive. <em>The song is longer than you think.</em></p>
+      <div class="actions">
+        <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="hero">Play free</a>
+        <a class="btn btn--ghost" href="#trailer" data-trailer="hero" data-event="watch_trailer_click" data-location="hero"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 1 L13 7 L2 13 Z" fill="currentColor"/></svg>Watch trailer</a>
+      </div>
+      <p class="note">No download. No account. Phone or desktop.</p>
+    </div>
+    <a class="scrollcue" href="#trailer" aria-label="Scroll to the trailer"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7 L10 13 L16 7"/></svg></a>
   </header>
 
+  <!-- =========================== 2. TRAILER ===========================
+       Replaces the old tap demo. Nothing downloads until the visitor
+       presses play (preload="none"); sound is theirs to switch. -->
+  <section class="band trailer" id="trailer" aria-labelledby="trailer-h">
+    <div class="wrap">
+      <div class="head rise">
+        <div>
+          <p class="eyebrow">Gameplay trailer</p>
+          <h2 id="trailer-h">See how deep it goes</h2>
+        </div>
+        <a class="btn btn--play btn--sm" href="/play/" data-event="play_free_click" data-location="trailer_head">Play free</a>
+      </div>
+
+      <div class="player rise" id="player">
+        <video id="trailerVideo" playsinline controls preload="none" poster="assets/landing/trailer-poster.webp" width="1280" height="720" aria-label="Rhythm Void gameplay trailer">
+          <source src="assets/landing/rhythm-void-trailer.mp4" type="video/mp4">
+          Your browser can't play this video. <a href="assets/landing/rhythm-void-trailer.mp4">Download the trailer</a>.
+        </video>
+        <button class="player__cover" id="trailerCover" type="button" hidden aria-label="Play the trailer">
+          <span class="player__btn"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 1 L13 7 L2 13 Z" fill="currentColor"/></svg></span>
+          <span class="player__label">Watch the trailer · 43 seconds</span>
+        </button>
+        <div class="player__end" id="trailerEnd" hidden>
+          <p>Your turn.</p>
+          <div class="row">
+            <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="trailer_end">Play free</a>
+            <button class="btn btn--ghost" type="button" id="trailerReplay">Watch again</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="player__bar rise">
+        <button class="sound" id="soundToggle" type="button" aria-pressed="true" aria-label="Trailer sound">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8 H6 L10 4.5 V15.5 L6 12 H3 Z" fill="currentColor"/><path class="on" d="M13 7.2 Q15 10 13 12.8 M15.2 5 Q18.6 10 15.2 15"/><path class="off" d="M13.5 7.5 L17.5 12.5 M17.5 7.5 L13.5 12.5"/></svg>
+          <span class="on">Sound on</span><span class="off">Sound off</span>
+        </button>
+        <p class="player__meta">Captured in the game. The music is the game's own.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================== 3. HOW IT PLAYS ========================== -->
+  <section class="band" id="how-to-play" aria-labelledby="how-h">
+    <div class="wrap">
+      <p class="eyebrow rise">How it plays</p>
+      <h2 id="how-h" class="rise">One tap. On the beat.</h2>
+      <p class="lede rise">Rings close in on your craft in time with the music. Tap as each one lands. Perfect hits restore your energy, misses drain it, and the song only gets faster.</p>
+
+      <div class="tiles">
+        <figure class="tile rise">
+          <div class="tile__img"><img src="assets/landing/show-beat.webp" alt="Rhythm Void gameplay: a glowing ring closing on the player's saucer, with score and combo at the top of the screen." width="960" height="540" loading="lazy" decoding="async"></div>
+          <figcaption>
+            <p class="n">01</p>
+            <h3>Hit the beat</h3>
+            <p>Tap when the ring meets your craft. Simple to learn. Not simple to survive.</p>
+          </figcaption>
+        </figure>
+        <figure class="tile rise" style="--d:.08s">
+          <div class="tile__img"><img src="assets/landing/show-streak.webp" alt="Rhythm Void gameplay at a 100 combo: a black hole has opened in the sky behind the saucer and the score multiplier reads times two." width="960" height="540" loading="lazy" decoding="async"></div>
+          <figcaption>
+            <p class="n">02</p>
+            <h3>Hold the streak</h3>
+            <p>Chain your hits and the music, the score and the sky itself start to change.</p>
+          </figcaption>
+        </figure>
+        <figure class="tile rise" style="--d:.16s">
+          <div class="tile__img"><img src="assets/landing/show-void.webp" alt="Rhythm Void gameplay: the saucer flying under the ocean through kelp and shafts of light, past a sea mine, jellyfish and an electric eel." width="960" height="540" loading="lazy" decoding="async"></div>
+          <figcaption>
+            <p class="n">03</p>
+            <h3>Fly the void</h3>
+            <p>Sometimes the song throws you somewhere else entirely. Steer. Your guns keep time.</p>
+          </figcaption>
+        </figure>
+      </div>
+
+      <ul class="controls rise">
+        <li><b>Phone</b> · tap anywhere</li>
+        <li><b>Desktop</b> · click, or press <kbd>Space</kbd></li>
+        <li><b>Headphones</b> · the rhythm is your best cue</li>
+      </ul>
+      <div class="actions rise">
+        <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="how_to_play">Play free</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 4. ONE BOSS ============================ -->
+  <section class="band boss" id="bosses" aria-labelledby="boss-h">
+    <div class="wrap boss__grid">
+      <figure class="boss__shot rise">
+        <img src="assets/landing/boss-prism.webp" alt="Rhythm Void boss fight: Vanta Prism, a violet crystal splitting a beam of light into a rainbow, above the player's saucer." width="1280" height="720" loading="lazy" decoding="async">
+      </figure>
+      <div>
+        <p class="eyebrow rise">Something is in the way</p>
+        <h2 id="boss-h" class="rise">Vanta Prism</h2>
+        <p class="boss__sub rise">The Null Shard</p>
+        <p class="lede rise">It bends light until it isn't there. It doesn't say much. It keeps its own time, and it expects you to keep up.</p>
+        <p class="boss__more rise">It isn't the only one out here.</p>
+        <div class="actions rise">
+          <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="boss">Play free</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 5. THE REST ============================ -->
+  <section class="band unknown" aria-labelledby="more-h">
+    <div class="wrap">
+      <p class="eyebrow rise">Past the last light</p>
+      <h2 id="more-h" class="rise">The song is longer than you think</h2>
+      <p class="rise">There are places the trailer doesn't show, and things out there that nobody talks about. The only way to see them is to keep the beat.</p>
+      <div class="actions rise">
+        <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="cta_band">Play free</a>
+      </div>
+    </div>
+  </section>
+
   <!-- ====================== STORY: THE SIGNAL ====================== -->
-  <section class="band band--tight" id="story" aria-labelledby="story-h">
+  <section class="band about" id="story" aria-labelledby="story-h">
     <div class="wrap">
       <p class="eyebrow">Previously, in The Signal&hellip;</p>
       <h2 id="story-h">One tiny saucer vs. five grumpy robots</h2>
       <div class="strip">
-        <figure class="panel rise" style="--accent:var(--c1)">
+        <figure class="panel rise">
           <p class="cap">Out past the last star, a thousand sleepy little worlds float through the dark. Their lights run on a song: <b>the Signal</b>.</p>
           <div class="art"><svg viewBox="0 0 320 150" role="img" aria-label="Sleepy planets drifting through space, with orbits and twinkling stars">
             <g fill="none" stroke="#b45cff" stroke-opacity="0.4" stroke-width="1.2" stroke-dasharray="4 6"><ellipse cx="62" cy="114" rx="46" ry="11"/><ellipse cx="160" cy="114" rx="36" ry="9"/><ellipse cx="258" cy="112" rx="54" ry="13"/></g>
@@ -1001,13 +609,13 @@ h3{font-style:italic}
             <text x="90" y="74" class="zzz">z</text><text x="98" y="62" class="zzz">z</text><text x="186" y="84" class="zzz">z</text><text x="290" y="64" class="zzz">z</text>
           </svg></div>
         </figure>
-        <figure class="panel rise" style="--accent:var(--c2)">
+        <figure class="panel rise" style="--d:.08s">
           <p class="cap">But out in the dark live some very big, very grumpy machines. They <b>hate</b> music.</p>
           <div class="art dark"><svg viewBox="0 0 320 150" role="img" aria-label="Five warden machines glaring out of the dark">
             <use href="#cxCube" x="0" y="56" width="62" height="60"/><use href="#cxHex" x="58" y="48" width="68" height="66"/><use href="#cxTri" x="122" y="42" width="64" height="64"/><use href="#cxPrism" x="184" y="50" width="60" height="60"/><use href="#cxEclipse" x="244" y="40" width="74" height="74"/>
           </svg><span class="bub" style="right:5%;top:6%">TOO. MUCH. GROOVE.</span></div>
         </figure>
-        <figure class="panel rise" style="--accent:var(--c3)">
+        <figure class="panel rise" style="--d:.16s">
           <p class="cap">Enter <b>you</b>: one tiny saucer with a gravity engine that runs on rhythm.</p>
           <div class="art"><svg viewBox="0 0 320 150" role="img" aria-label="The hero: a little saucer with a pilot wearing headphones">
             <use href="#cxSaucer" x="62" y="8" width="196" height="139"/>
@@ -1018,298 +626,6 @@ h3{font-style:italic}
     </div>
   </section>
 
-  <!-- ========================= 3. FEATURES ========================= -->
-  <section class="band band--tight" aria-labelledby="features-h">
-    <div class="wrap">
-      <p class="eyebrow">What you're getting into</p>
-      <h2 id="features-h">Built around one perfect tap</h2>
-      <div class="cards cards--4">
-
-        <article class="card rise" style="--accent:var(--c1)">
-          <div class="card__mark" aria-hidden="true">
-            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="20" cy="20" r="17"/><circle cx="20" cy="20" r="8" stroke-dasharray="3 4"/><circle cx="20" cy="3" r="2.5" fill="currentColor" stroke="none"/>
-            </svg>
-          </div>
-          <p class="card__tag">Timing</p>
-          <h3>Perfect timing</h3>
-          <p>Tap shrinking glowing rings at the perfect moment to build combo, restore energy, and push deeper into the void.</p>
-        </article>
-
-        <article class="card rise" style="--accent:var(--c2)">
-          <div class="card__mark" aria-hidden="true">
-            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 4 33 12v16L20 36 7 28V12z"/><circle cx="20" cy="20" r="5" fill="currentColor" stroke="none"/>
-            </svg>
-          </div>
-          <p class="card__tag">Core</p>
-          <h3>Boss core abilities</h3>
-          <p>Defeat bosses and capture their cores to unlock powers like Quantize, Hex Saw, Tri-Laser, Prism Guard, and Event Horizon.</p>
-        </article>
-
-        <article class="card rise" style="--accent:var(--c3)">
-          <div class="card__mark" aria-hidden="true">
-            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 3 37 20 20 37 3 20z" stroke-dasharray="5 5"/><path d="M20 12v16M12 20h16"/>
-            </svg>
-          </div>
-          <p class="card__tag">Realm</p>
-          <h3>Secret realms</h3>
-          <p>Discover hidden modes with unique music, new bosses, and completely different energy.</p>
-        </article>
-
-        <article class="card rise" style="--accent:var(--white)">
-          <div class="card__mark" aria-hidden="true">
-            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 34V22M20 34V8M34 34V16"/><circle cx="20" cy="8" r="3" fill="currentColor" stroke="none"/>
-            </svg>
-          </div>
-          <p class="card__tag">Score</p>
-          <h3>Weekly leaderboard</h3>
-          <p>Track your weekly best, share your run, and challenge friends to beat your score.</p>
-        </article>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================== 4. BOSSES ========================== -->
-  <section class="band" id="bosses" aria-labelledby="boss-h">
-    <div class="wrap">
-      <p class="eyebrow">The Warden Files</p>
-      <h2 id="boss-h">Boss fights change the run</h2>
-      <p class="lede">Every major boss has its own arena, music, attack rhythm, and unlockable power. Learn the patterns, survive the pressure, and turn their core into your weapon.</p>
-
-      <div class="bosses">
-        <article class="boss rise" style="--accent:#a6ff3d">
-          <div class="boss__art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cxCube" width="100%" height="100%"/></svg><span class="bub bub-s">NO. DANCING.</span></div>
-          <div>
-            <p class="boss__name">Cubex</p>
-            <p class="boss__sub">The Gatekeeper · Stage 10</p>
-            <p class="boss__core">Core → Quantize</p>
-            <p class="boss__note">Square as they come. Your first fight, and its core snaps every hit you land into a Perfect.</p>
-          </div>
-        </article>
-
-        <article class="boss rise" style="--accent:var(--c1)">
-          <div class="boss__art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cxHex" width="100%" height="100%"/></svg><span class="bub bub-s">OFF-BEAT! OFF-BEAT!</span></div>
-          <div>
-            <p class="boss__name">Hexatron</p>
-            <p class="boss__sub">The Signal Warden · Stage 20</p>
-            <p class="boss__core">Core → Hex Saw</p>
-            <p class="boss__note">Six sides, zero rhythm. Capture its core to equip Hex Saw.</p>
-          </div>
-        </article>
-
-        <article class="boss rise" style="--accent:var(--c2)">
-          <div class="boss__art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cxTri" width="100%" height="100%"/></svg><span class="bub bub-s">KNEEL TO THE TRIANGLE.</span></div>
-          <div>
-            <p class="boss__name">Triarch</p>
-            <p class="boss__sub">The Razor Emperor · Stage 30</p>
-            <p class="boss__core">Core → Tri-Laser</p>
-            <p class="boss__note">Three blades, one tiny crown, one enormous ego. Its core powers Tri-Laser.</p>
-          </div>
-        </article>
-
-        <article class="boss rise" style="--accent:var(--c3)">
-          <div class="boss__art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cxPrism" width="100%" height="100%"/></svg><span class="bub bub-s">…</span></div>
-          <div>
-            <p class="boss__name">Vanta Prism</p>
-            <p class="boss__sub">The Null Shard · Stage 40</p>
-            <p class="boss__core">Core → Prism Guard</p>
-            <p class="boss__note">Bends light until it isn't there. Doesn't say much. Its core powers Prism Guard.</p>
-          </div>
-        </article>
-
-        <article class="boss rise" style="--accent:var(--white)">
-          <div class="boss__art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#cxEclipse" width="100%" height="100%"/></svg><span class="bub bub-s">I AM THE END OF THE SONG.</span></div>
-          <div>
-            <p class="boss__name">Eclipse Sovereign</p>
-            <p class="boss__sub">The Last Orbit · Stage 50</p>
-            <p class="boss__core">Core → Event Horizon</p>
-            <p class="boss__note">Wants to swallow the last light in the sky. Rude. Its core opens the Event Horizon.</p>
-          </div>
-        </article>
-
-        <article class="boss rise" style="--accent:#ffe9a8">
-          <div class="boss__art"><svg viewBox="-50 -50 100 100" aria-hidden="true"><g stroke="#ffd23d" stroke-opacity="0.5" stroke-width="2"><path d="M0 -40 V-28 M0 40 V28 M-40 0 H-28 M40 0 H28 M-28 -28 L-20 -20 M28 28 L20 20 M-28 28 L-20 20 M28 -28 L20 -20"/></g><circle r="22" fill="#000" stroke="#ffe9a8" stroke-width="3"/><text y="9" text-anchor="middle" font-size="26" font-weight="900" fill="#ffe9a8">?</text></svg><span class="bub bub-s">TICK. TOCK.</span></div>
-          <div>
-            <p class="boss__name">???</p>
-            <p class="boss__sub">Not in the files</p>
-            <p class="boss__core">Core → ???</p>
-            <p class="boss__note">Some Wardens never made it into the files. The song is longer than you think. Keep playing.</p>
-          </div>
-        </article>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- ======================= 5. SECRET REALMS ======================= -->
-  <section class="band band--tight" aria-labelledby="realms-h">
-    <div class="wrap">
-      <p class="eyebrow">Things the Wardens never talk about&hellip;</p>
-      <h2 id="realms-h">Hidden realms are waiting</h2>
-      <p class="lede">Rhythm Void has more than one rhythm. Find the hidden paths, enter secret realms, and face bosses that don't play by the normal rules.</p>
-
-      <div class="realms">
-        <div class="realm rise" style="--accent:#ff2b12">
-          <svg viewBox="34 22 140 80" aria-hidden="true"><path d="M40 74 Q62 30 96 52 Q102 34 116 30 Q112 46 120 58 Q150 40 168 70 Q140 66 126 78 Q112 92 90 86 Q70 96 40 74 Z" fill="#1d0403" stroke="#ff2b12" stroke-width="1.4" stroke-opacity="0.7"/><circle cx="112" cy="46" r="2.4" fill="#ff7a1a"/><circle cx="118" cy="47" r="2" fill="#ff7a1a"/></svg>
-          <p class="realm__lock" aria-hidden="true">???</p>
-          <p class="realm__label">Something old and hungry sleeps between the stars.</p>
-        </div>
-        <div class="realm rise" style="--accent:#5ef2ff">
-          <svg viewBox="-40 -22 80 56" aria-hidden="true"><ellipse rx="24" ry="5" fill="#0b2230" stroke="#5ef2ff" stroke-width="1.4"/><path d="M-11 -2 A11 10 0 0 1 11 -2" fill="#0f3a48" stroke="#5ef2ff" stroke-width="1.2"/><path d="M-6 6 L6 6 L14 26 L-14 26 Z" fill="#5ef2ff" opacity="0.14"/></svg>
-          <p class="realm__lock" aria-hidden="true">???</p>
-          <p class="realm__label">A strange craft hides where not even light can escape.</p>
-        </div>
-        <div class="realm rise" style="--accent:#ffd23d">
-          <svg viewBox="-36 -24 72 48" aria-hidden="true"><path d="M-22 0 Q0 -16 22 0 Q0 16 -22 0 Z" fill="#0d1430" stroke="#ffd23d" stroke-width="1.4"/><circle r="6" fill="#ffd23d"/><circle r="2.6" fill="#0d1430"/></svg>
-          <p class="realm__lock" aria-hidden="true">???</p>
-          <p class="realm__label">And whoever wrote the Signal still keeps score.</p>
-        </div>
-      </div>
-      <p class="lede" style="margin-top:22px">Each one hides its own world, its own boss and its own music. Beat it and the world is yours to keep.</p>
-    </div>
-  </section>
-
-  <!-- ======================== 6. LEADERBOARD ======================== -->
-  <section class="band band--tight" aria-labelledby="board-h">
-    <div class="wrap">
-      <p class="eyebrow">Weekly reset</p>
-      <h2 id="board-h">Chase your weekly best</h2>
-      <p class="lede">Every run gives you a score, stage, accuracy, bosses defeated, and shareable result. Send it to a friend and see who survives longer.</p>
-
-      <div class="cards">
-        <article class="card rise" style="--accent:var(--c1)">
-          <h3>Your run, measured</h3>
-          <p>Score, stage reached, accuracy, and bosses defeated — recorded at the end of every attempt.</p>
-        </article>
-        <article class="card rise" style="--accent:var(--c2)">
-          <h3>Share the challenge</h3>
-          <p>Copy your result and send it to a friend. Whoever survives longer takes the week.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ======================== 7. HOW TO PLAY ======================== -->
-  <section class="band" id="how-to-play" aria-labelledby="how-h">
-    <div class="wrap">
-      <p class="eyebrow">Controls</p>
-      <h2 id="how-h">How to play</h2>
-      <p class="lede">Five things to know. You'll have them down inside one run.</p>
-
-      <ol class="steps">
-        <li><span><b>Tap when the ring reaches the target.</b></span></li>
-        <li><span>Perfect hits <b>restore energy</b> and build combo.</span></li>
-        <li><span>Misses <b>drain energy</b>.</span></li>
-        <li><span>Hold the target or <kbd>Spacebar</kbd> to activate your equipped <b>Boss Core ability</b>.</span></li>
-        <li><span><b>Survive as long as you can.</b></span></li>
-      </ol>
-
-      <div class="controls">
-        <div class="ctrl" style="--accent:var(--c1)">
-          <h3>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/>
-            </svg>
-            On mobile
-          </h3>
-          <dl>
-            <div><dt>Tap</dt><dd>Hit the target the moment the ring lands on it.</dd></div>
-            <div><dt>Hold</dt><dd>Press and hold the target to fire your equipped Boss Core ability.</dd></div>
-            <div><dt>Screen</dt><dd>Portrait works — turn your phone sideways for a wider view of the arena.</dd></div>
-          </dl>
-        </div>
-
-        <div class="ctrl" style="--accent:var(--c2)">
-          <h3>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>
-            </svg>
-            On desktop
-          </h3>
-          <dl>
-            <div><dt>Click</dt><dd>Click the target, or press <kbd>Spacebar</kbd> — both count as a tap.</dd></div>
-            <div><dt>Hold</dt><dd>Hold <kbd>Spacebar</kbd> or the mouse button to fire your Boss Core ability.</dd></div>
-            <div><dt>Audio</dt><dd>Headphones help. The rhythm is your best timing cue.</dd></div>
-          </dl>
-        </div>
-      </div>
-
-      <div class="hero__actions">
-        <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="how_to_play">Play free</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ======================== 8. SCREENSHOTS ======================== -->
-  <section class="band band--tight" aria-labelledby="shots-h">
-    <div class="wrap">
-      <p class="eyebrow">Gallery</p>
-      <h2 id="shots-h">See it in motion</h2>
-
-      <!-- ===================================================================
-           SCREENSHOTS
-
-           Files live in /shots/ at the site root. To swap one out, replace the
-           file and keep the same name, or point src at the new filename.
-
-           width/height are the image's intrinsic pixel size. They reserve the
-           right space before the file loads, so the page does not jump. If you
-           export at a different size, update these two numbers to match.
-
-           The frames crop rather than stretch (object-fit: cover), so an image
-           that is not 16:10 will be centre-cropped instead of distorted. If
-           these are portrait phone captures, change --shot-ratio in the .shot
-           CSS above from 16/10 to 9/16 and the frames become phone-shaped.
-           =================================================================== -->
-      <div class="shots">
-
-        <figure class="shot rise">
-          <p class="shot__tag">01 · Combo Fever</p>
-          <div class="shot__frame">
-            <img src="shots/ring-combo.jpg" alt="Rhythm Void gameplay showing the UFO gravity craft absorbing a hit inside glowing neon rings, Combo Fever, score, best score, and energy bar." width="1600" height="1000" loading="lazy" decoding="async">
-          </div>
-          <figcaption>Build streaks, trigger Combo Fever, and keep the run alive with perfect timing.</figcaption>
-        </figure>
-
-        <figure class="shot rise">
-          <p class="shot__tag">02 · Boss Arena</p>
-          <div class="shot__frame">
-            <img src="shots/boss-arena.jpg" alt="Rhythm Void Hexatron boss fight showing the boss health bar, neon boss shapes, the UFO gravity craft, score, combo, and best score." width="1600" height="1000" loading="lazy" decoding="async">
-          </div>
-          <figcaption>Face bosses, read their patterns, and capture their cores.</figcaption>
-        </figure>
-
-        <figure class="shot rise">
-          <p class="shot__tag">03 · Run Results</p>
-          <div class="shot__frame">
-            <img src="shots/run-results.jpg" alt="Rhythm Void run results screen showing S plus grade, score, max combo, stage, accuracy, bosses defeated, and Copy Result button." width="1600" height="1000" loading="lazy" decoding="async">
-          </div>
-          <figcaption>Every run ends with score, grade, accuracy, max combo, stage reached, and a shareable result.</figcaption>
-        </figure>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================== CTA BAND ========================== -->
-  <section class="band band--tight">
-    <div class="wrap">
-      <div class="cta">
-        <div class="cta__art"><svg viewBox="0 0 320 118" aria-hidden="true">
-          <circle cx="160" cy="62" r="52" fill="none" stroke="#5ef2ff" stroke-width="2" opacity="0.5"/><circle cx="160" cy="62" r="40" fill="none" stroke="#b45cff" stroke-width="3" opacity="0.7"/>
-          <use href="#cxSaucer" x="104" y="22" width="112" height="80"/>
-        </svg><span class="bub bub-l">Hold the beat!</span></div>
-        <p class="tbc">To be continued&hellip; by you</p>
-        <h2>One tap and you're in</h2>
-        <p>It runs in the browser on phone or desktop. No download, no account, no waiting.</p>
-        <a class="btn btn--play" href="/play/" data-event="play_free_click" data-location="cta_band">Play free</a>
-      </div>
-    </div>
-  </section>
-
   <!-- ========================== 9. CONTACT ========================== -->
   <section class="band band--tight" id="feedback" aria-labelledby="feedback-h">
     <div class="wrap">
@@ -1317,11 +633,11 @@ h3{font-style:italic}
       <h2 id="feedback-h">Send public beta feedback</h2>
       <p class="lede">Public Beta — feedback helps shape the game. Bug reports, difficulty spikes, and "this boss feels unfair" notes all feed straight back into what ships next.</p>
 
-      <div class="hero__actions">
-        <a class="btn btn--play" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback" data-event="contact_email_click" data-location="feedback_cta">Send beta feedback</a>
+      <div class="actions">
+        <a class="btn btn--ghost" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback" data-event="contact_email_click" data-location="feedback_cta">Send beta feedback</a>
       </div>
 
-      <div class="contact">
+      <div class="cards">
         <a class="card rise" style="--accent:var(--c1)" href="mailto:playrhythmvoid@gmail.com?subject=Rhythm%20Void%20Public%20Beta%20Feedback" data-event="contact_email_click" data-location="feedback_email_card">
           <h3>Email the playtest</h3>
           <p>playrhythmvoid@gmail.com — tell me what happened, which stage you were on, and what device you were playing on.</p>
@@ -1342,8 +658,9 @@ h3{font-style:italic}
     <div class="foot">
       <p class="foot__mark">Rhythm Void</p>
       <nav aria-label="Footer">
+        <a href="#trailer">Trailer</a>
         <a href="#how-to-play">How to play</a>
-        <a href="#bosses">Bosses</a>
+        <a href="#story">About</a>
         <a href="/privacy/">Privacy</a>
         <a href="/terms/">Terms</a>
         <a href="/contact/">Contact</a>
@@ -1359,203 +676,197 @@ h3{font-style:italic}
 </div>
 
 <script>
-(function(){
+(function () {
   "use strict";
-  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var doc = document, root = doc.documentElement;
+  var RM = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  doc.getElementById("yr").textContent = new Date().getFullYear();
 
-  document.getElementById("yr").textContent = new Date().getFullYear();
-
-  /* ---------- analytics hooks ----------
-     No vendor script is installed. This forwards clicks on anything carrying
-     data-event to whichever tag manager you add later, and does nothing at all
-     until one exists. One delegated listener, so links added in future are
-     covered without touching this code.
-
-     GA4 is installed in <head>, so window.gtag exists and the first branch
-     runs. The dataLayer branch is kept as a fallback for GTM. */
-  document.addEventListener("click", function (e) {
-    var el = e.target.closest("[data-event]");
-    if (!el) return;
-    var name = el.getAttribute("data-event");
-    var where = el.getAttribute("data-location") || "unknown";
-    if (typeof window.gtag === "function") {
-      window.gtag("event", name, {
-        location: where,
-        page_path: location.pathname
-      });
-    } else if (Array.isArray(window.dataLayer)) {
-      window.dataLayer.push({
-        event: name,
-        location: where,
-        page_path: location.pathname
-      });
-    }
+  /* ---------- analytics ----------
+     GA4 is installed in <head>. One delegated listener covers every element
+     carrying data-event; track() sends the trailer events. */
+  function track(name, where) {
+    var data = { location: where || "unknown", page_path: location.pathname };
+    if (typeof window.gtag === "function") window.gtag("event", name, data);
+    else if (Array.isArray(window.dataLayer)) { data.event = name; window.dataLayer.push(data); }
+  }
+  doc.addEventListener("click", function (e) {
+    var el = e.target.closest && e.target.closest("[data-event]");
+    if (el) track(el.getAttribute("data-event"), el.getAttribute("data-location"));
   }, { passive: true });
 
-  /* Canonical and og:url are hardcoded to https://playrhythmvoid.com/ in
-     <head>. Nothing rewrites them at runtime by design: a script that "fixed"
-     them based on location.host would corrupt canonical whenever the page is
-     opened from a staging or preview host. */
+  /* Canonical and og:url are hardcoded to https://playrhythmvoid.com/ in <head>.
+     Nothing rewrites them at runtime by design. */
 
-  /* ---------- scroll reveal: removed ----------
-     All content is visible via CSS by default. Nothing here may hide it. */
+  var hero = doc.querySelector(".hero"), dock = doc.getElementById("dock"), topbar = doc.getElementById("topbar");
+  var hasIO = "IntersectionObserver" in window;
 
-  /* ---------- sticky mobile CTA, shown once the hero scrolls away ---------- */
-  var dock = document.getElementById("dock"), hero = document.querySelector(".hero");
-  if ("IntersectionObserver" in window && hero) {
-    new IntersectionObserver(function(entries){
-      dock.classList.toggle("on", !entries[0].isIntersecting);
-    }, { threshold: 0 }).observe(hero);
-  }
+  /* ---------- Play free stays in reach: bottom dock (phones), top bar (desktop) ---------- */
+  if (hasIO && hero) {
+    new IntersectionObserver(function (en) {
+      var away = !en[0].isIntersecting;
+      dock.classList.toggle("on", away); topbar.classList.toggle("on", away);
+    }, { threshold: 0.12 }).observe(hero);
+  } else { dock.classList.add("on"); topbar.classList.add("on"); }
 
-  /* ---------- signature: live pulse ring ---------- */
-  var canvas = document.getElementById("pulse"),
-      hudCombo = document.getElementById("hudCombo"),
-      hudLast  = document.getElementById("hudLast"),
-      hudBest  = document.getElementById("hudBest"),
-      stage  = document.getElementById("stage"),
-      verdict= document.getElementById("verdict"),
-      ctx    = canvas.getContext("2d"),
-      size = 0, cx = 0, cy = 0, maxR = 0, targetR = 0,
-      DUR = 1700, start = performance.now(),
-      judged = false, combo = 0, bestCombo = 0, flash = 0, flashHue = "#f7fbff",
-      running = false, raf = 0;
+  /* ---------- section reveals (content is visible unless this can guarantee the reveal) ---------- */
+  (function () {
+    var els = doc.querySelectorAll(".rise");
+    if (!hasIO || RM || !els.length) return;
+    root.classList.add("js-reveal");
+    var showAll = function () { for (var i = 0; i < els.length; i++) els[i].classList.add("in"); };
+    try {
+      var io = new IntersectionObserver(function (en) {
+        for (var i = 0; i < en.length; i++) if (en[i].isIntersecting) { en[i].target.classList.add("in"); io.unobserve(en[i].target); }
+      }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+      for (var i = 0; i < els.length; i++) io.observe(els[i]);
+      /* failsafe: anything already on screen that was never reported is shown anyway */
+      setTimeout(function () {
+        var vh = window.innerHeight || 800;
+        for (var i = 0; i < els.length; i++) { var r = els[i].getBoundingClientRect(); if (r.top < vh && r.bottom > 0) els[i].classList.add("in"); }
+      }, 1500);
+      window.addEventListener("beforeprint", showAll);
+    } catch (err) { root.classList.remove("js-reveal"); }
+  })();
 
-  function resize(){
-    var box = stage.getBoundingClientRect();
-    if (!box.width) return;
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    size = box.width;
-    canvas.width  = Math.round(size * dpr);
-    canvas.height = Math.round(size * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cx = cy = size / 2;
-    maxR = size * 0.44;
-    targetR = size * 0.20;
-    if (!running) draw(performance.now());
-  }
+  /* ---------- hero atmosphere: stars with depth, rings on the beat, a light that follows you ---------- */
+  (function () {
+    var sky = doc.getElementById("sky"), craft = doc.getElementById("craft"), light = doc.getElementById("light"), plates = doc.getElementById("plates");
+    if (!hero || !sky || !sky.getContext) return;
+    var ctx = sky.getContext("2d"), W = 0, H = 0, stars = [], rings = [], t0 = performance.now(), running = false, raf = 0, visible = true;
+    var ptr = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5, on: false }, c = { x: 0, y: 0, rot: 0, set: false }, lit = { x: 0, y: 0 }, lastRing = -9, ringN = 0, flash = 0;
+    var COLS = ["#00f5ff", "#ff2bd6", "#7dff68", "#ffd23d"], BAR = 60 / 140 * 4;      /* the trailer's tempo */
 
-  function ring(r, color, width, alpha, glow){
-    if (r <= 0) return;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = color;
-    ctx.globalAlpha = alpha;
-    ctx.lineWidth = width;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = glow;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
-  }
-
-  function currentR(now){
-    var p = ((now - start) % DUR) / DUR;
-    return maxR * (1 - p);
-  }
-
-  function draw(now){
-    ctx.clearRect(0, 0, size, size);
-
-    /* ambient ring */
-    ctx.save();
-    ctx.setLineDash([4, 12]);
-    ring(maxR * 1.02, "#7dff68", 1, .45, 8);
-    ctx.restore();
-
-    /* target ring */
-    ring(targetR, "#ff2bd6", 2.5, .95, 16);
-    ring(targetR - 7, "#ff2bd6", 1, .28, 0);
-
-    /* the saucer (an SVG over the canvas) sits on the target */
-
-    /* incoming ring */
-    var r = currentR(now);
-    if (r < targetR * 0.35 && !judged){ judged = true; combo = 0; hud("Miss"); }
-    if (r <= 1){ start = now; judged = false; }
-    ring(r, "#00f5ff", 3, judged ? .3 : 1, 20);
-
-    /* hit shockwave */
-    if (flash > 0){
-      ring(targetR + (1 - flash) * size * 0.22, flashHue, 2.5 * flash, flash, 26);
-      flash -= 0.045;
+    function size() {
+      var r = hero.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      W = r.width; H = r.height;
+      sky.width = Math.round(W * dpr); sky.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var n = Math.min(220, Math.round(W * H / 7500)); stars = [];
+      for (var i = 0; i < n; i++) { var z = Math.random(); stars.push({ x: Math.random(), y: Math.random(), z: 0.15 + z * z * 0.85, p: Math.random() * 6.28, s: 0.6 + Math.random() * 1.2 }); }
+      c.set = false;
+      if (!running) frame(performance.now());
     }
-
-    /* combo readout */
-    if (combo > 1){
-      ctx.font = "600 " + Math.round(size * 0.075) + "px 'Chakra Petch', sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillStyle = "rgba(234,252,255,.85)";
-      ctx.fillText(combo + "x", cx, cy + size * 0.36);
+    function home() { return W >= 900 ? [W * 0.7, H * 0.56] : [W * 0.5, H * 0.27]; }
+    function frame(now) {
+      var t = (now - t0) / 1000, i, s;
+      ptr.x += (ptr.tx - ptr.x) * 0.06; ptr.y += (ptr.ty - ptr.y) * 0.06;
+      var ox = ptr.x - 0.5, oy = ptr.y - 0.5, sc = Math.min(window.pageYOffset || 0, H);
+      ctx.clearRect(0, 0, W, H);
+      for (i = 0; i < stars.length; i++) {
+        s = stars[i];
+        var x = ((s.x * W - ox * 70 * s.z - t * 5 * s.z) % W + W) % W, y = ((s.y * H - oy * 46 * s.z - sc * 0.14 * s.z) % H + H) % H, r = s.s * (0.5 + s.z * 0.9);
+        ctx.globalAlpha = (0.2 + 0.8 * s.z) * (RM ? 0.8 : 0.6 + 0.4 * Math.sin(t * 1.7 * s.s + s.p));
+        ctx.fillStyle = s.z > 0.8 ? "#e6f8ff" : "#9fb4d8"; ctx.fillRect(x, y, r, r);
+      }
+      /* the craft: drifts on its own, leans toward the pointer or your finger, banks as it moves */
+      var h = home(), wob = RM ? 0 : 1;
+      var tx = h[0] + ox * Math.min(W * 0.16, 170) + Math.sin(t * 0.45) * 14 * wob, ty = h[1] + oy * Math.min(H * 0.14, 100) + Math.sin(t * 1.25) * 8 * wob - sc * 0.12;
+      if (!c.set) { c.x = tx; c.y = ty; c.set = true; lit.x = tx; lit.y = ty; }
+      var px = c.x; c.x += (tx - c.x) * 0.07; c.y += (ty - c.y) * 0.07;
+      c.rot += (Math.max(-10, Math.min(10, (c.x - px) * 1.8)) - c.rot) * 0.1;
+      var cw = craft.offsetWidth || 300, ch = craft.offsetHeight || 200;
+      craft.style.transform = "translate3d(" + (c.x - cw / 2).toFixed(1) + "px," + (c.y - ch / 2).toFixed(1) + "px,0) rotate(" + c.rot.toFixed(2) + "deg)";
+      /* rings close on it once a bar, as they do in the game */
+      if (!RM) {
+        if (t - lastRing > BAR) { lastRing = t; rings.push({ t0: t, col: COLS[ringN++ % COLS.length] }); }
+        var r0 = cw * 0.4, r1 = Math.max(W, H) * 0.62;
+        for (i = rings.length - 1; i >= 0; i--) {
+          var u = (t - rings[i].t0) / (BAR * 0.92);
+          if (u >= 1) { rings.splice(i, 1); flash = 1; continue; }
+          var rr = r0 + (r1 - r0) * (1 - u) * (1 - u), a = Math.min(1, u * 2.5) * 0.75;
+          ctx.strokeStyle = rings[i].col; ctx.beginPath(); ctx.arc(c.x, c.y, rr, 0, 6.2832);
+          ctx.globalAlpha = a * 0.22; ctx.lineWidth = 9; ctx.stroke();
+          ctx.globalAlpha = a; ctx.lineWidth = 2.5; ctx.stroke();
+        }
+        if (flash > 0.02) {
+          var g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, cw * 0.8);
+          g.addColorStop(0, "rgba(200,245,255," + (0.42 * flash).toFixed(3) + ")"); g.addColorStop(1, "rgba(200,245,255,0)");
+          ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(c.x - cw, c.y - cw, cw * 2, cw * 2);
+          ctx.strokeStyle = "#ffffff"; ctx.globalAlpha = flash * 0.7; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(c.x, c.y, r0 + (1 - flash) * cw * 0.35, 0, 6.2832); ctx.stroke();
+          flash *= 0.93;
+        }
+      } else {
+        ctx.strokeStyle = COLS[0]; ctx.globalAlpha = 0.5; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(c.x, c.y, cw * 0.62, 0, 6.2832); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      /* the light follows the pointer; with no pointer it stays on the craft */
+      var lx = ptr.on ? ptr.x * W : c.x, ly = ptr.on ? ptr.y * H : c.y;
+      lit.x += (lx - lit.x) * 0.08; lit.y += (ly - lit.y) * 0.08;
+      light.style.setProperty("--lx", lit.x.toFixed(0) + "px"); light.style.setProperty("--ly", lit.y.toFixed(0) + "px");
+      if (!RM) { plates.style.setProperty("--px", (-ox * 20).toFixed(1) + "px"); plates.style.setProperty("--py", (-oy * 12 - sc * 0.06).toFixed(1) + "px"); }
+      if (running) raf = requestAnimationFrame(frame);
     }
-
-    if (running) raf = requestAnimationFrame(draw);
-  }
-
-  /* Mirror the judgement into the HUD panels. Same values the canvas uses,
-     so the readout is live rather than decorative. */
-  function hud(text){
-    if (combo > bestCombo) bestCombo = combo;
-    if (hudCombo) hudCombo.textContent = combo;
-    if (hudBest)  hudBest.textContent  = bestCombo;
-    if (hudLast){
-      hudLast.textContent = text;
-      hudLast.setAttribute("data-j", text.toLowerCase());
+    function play(on) {
+      on = on && !RM && visible && !doc.hidden;
+      if (on === running) return;
+      running = on; cancelAnimationFrame(raf);
+      if (on) raf = requestAnimationFrame(frame);
     }
-  }
-
-  function say(text, color){
-    hud(text);
-    verdict.textContent = text;
-    verdict.style.color = color;
-    verdict.classList.remove("show");
-    void verdict.offsetWidth;
-    verdict.classList.add("show");
-  }
-
-  var ufo = document.getElementById("demoUfo");
-  function hit(){
-    if (reduce) return;
-    if (judged){ return; }
-    var d = Math.abs(currentR(performance.now()) - targetR);
-    judged = true;
-    if (d < size * 0.07 && ufo){ ufo.classList.remove("bump"); void ufo.getBoundingClientRect(); ufo.classList.add("bump"); }
-    if (d < size * 0.028){
-      combo++; flash = 1; flashHue = "#f7fbff";
-      say("Perfect", "#f7fbff");
-    } else if (d < size * 0.07){
-      combo++; flash = .7; flashHue = "#00f5ff";
-      say("Good", "#00f5ff");
-    } else {
-      combo = 0;
-      say("Miss", "#ff2bd6");
-    }
-  }
-
-  stage.addEventListener("pointerdown", function(e){ e.preventDefault(); hit(); });
-  stage.addEventListener("keydown", function(e){
-    if (e.key === "Enter" || e.key === " "){ e.preventDefault(); hit(); }
-  });
-
-  /* only animate while visible */
-  function play(on){
-    if (on && !running && !reduce){ running = true; start = performance.now(); judged = false; raf = requestAnimationFrame(draw); }
-    else if (!on && running){ running = false; cancelAnimationFrame(raf); }
-  }
-
-  window.addEventListener("resize", resize, { passive: true });
-  resize();
-
-  if (reduce){
-    draw(performance.now());
-  } else if ("IntersectionObserver" in window){
-    new IntersectionObserver(function(entries){ play(entries[0].isIntersecting); }, { threshold: .15 }).observe(stage);
-  } else {
+    function point(cx, cy) { var r = hero.getBoundingClientRect(); ptr.tx = Math.max(0, Math.min(1, (cx - r.left) / r.width)); ptr.ty = Math.max(0, Math.min(1, (cy - r.top) / r.height)); ptr.on = true; }
+    function rest() { ptr.tx = 0.5; ptr.ty = 0.5; ptr.on = false; }
+    hero.addEventListener("pointermove", function (e) { if (e.pointerType !== "touch") point(e.clientX, e.clientY); }, { passive: true });
+    hero.addEventListener("pointerleave", rest, { passive: true });
+    hero.addEventListener("touchstart", function (e) { var p = e.touches[0]; if (p) point(p.clientX, p.clientY); }, { passive: true });
+    hero.addEventListener("touchmove", function (e) { var p = e.touches[0]; if (p) point(p.clientX, p.clientY); }, { passive: true });
+    hero.addEventListener("touchend", rest, { passive: true });
+    hero.addEventListener("touchcancel", rest, { passive: true });
+    var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(size, 120); }, { passive: true });
+    doc.addEventListener("visibilitychange", function () { play(true); });
+    if (hasIO) new IntersectionObserver(function (en) { visible = en[0].isIntersecting; play(true); }, { threshold: 0.02 }).observe(hero);
+    if (craft.complete) size(); else { craft.addEventListener("load", size); size(); }
     play(true);
-  }
-  document.addEventListener("visibilitychange", function(){
-    if (document.hidden) play(false);
-  });
+
+    /* the other places fade in behind, once the page has finished loading */
+    var imgs = plates.querySelectorAll("img"), cur = 0;
+    function later() {
+      for (var i = 0; i < imgs.length; i++) if (imgs[i].getAttribute("data-src")) { imgs[i].src = imgs[i].getAttribute("data-src"); imgs[i].removeAttribute("data-src"); }
+      if (RM) return;
+      setInterval(function () {
+        if (doc.hidden || !visible) return;
+        var next = (cur + 1) % imgs.length;
+        if (!imgs[next].complete || !imgs[next].naturalWidth) return;
+        imgs[cur].classList.remove("on"); imgs[next].classList.add("on"); cur = next;
+      }, 6800);
+    }
+    if (doc.readyState === "complete") setTimeout(later, 900); else window.addEventListener("load", function () { setTimeout(later, 900); });
+  })();
+
+  /* ---------- trailer: nothing loads until play; sound is the visitor's to switch ---------- */
+  (function () {
+    var v = doc.getElementById("trailerVideo"), cover = doc.getElementById("trailerCover"), end = doc.getElementById("trailerEnd"),
+        snd = doc.getElementById("soundToggle"), replay = doc.getElementById("trailerReplay"), sec = doc.getElementById("trailer");
+    if (!v || !cover) return;
+    var soundOn = true, started = false;
+    try { if (localStorage.getItem("rvTrailerSound") === "off") soundOn = false; } catch (e) {}
+    function sync() { v.muted = !soundOn; snd.setAttribute("aria-pressed", soundOn ? "true" : "false"); }
+    function start(where) {
+      end.hidden = true; cover.hidden = true; v.controls = true; sync();
+      try { if (v.ended) v.currentTime = 0; } catch (e) {}
+      var p = v.play();
+      if (p && p.catch) p.catch(function () {            /* sound refused without a gesture: start silent instead */
+        v.muted = true; snd.setAttribute("aria-pressed", "false");
+        var q = v.play(); if (q && q.catch) q.catch(function () { cover.hidden = false; v.controls = false; });
+      });
+      if (!started) { started = true; track("trailer_play", where); }
+    }
+    v.controls = false; cover.hidden = false; sync();          /* (with no script, the plain <video controls> still works) */
+    cover.addEventListener("click", function () { start("trailer_poster"); });
+    replay.addEventListener("click", function () { start("trailer_replay"); });
+    snd.addEventListener("click", function () {
+      soundOn = !soundOn; if (soundOn && v.volume === 0) v.volume = 1;
+      try { localStorage.setItem("rvTrailerSound", soundOn ? "on" : "off"); } catch (e) {}
+      sync();
+    });
+    v.addEventListener("volumechange", function () { soundOn = !v.muted && v.volume > 0; snd.setAttribute("aria-pressed", soundOn ? "true" : "false"); });
+    v.addEventListener("ended", function () { end.hidden = false; v.controls = false; track("trailer_complete", "trailer"); });
+    var links = doc.querySelectorAll("[data-trailer]");
+    for (var i = 0; i < links.length; i++) links[i].addEventListener("click", function (e) {
+      e.preventDefault();
+      doc.getElementById("player").scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "center" });
+      start(this.getAttribute("data-trailer"));
+    });
+    if (hasIO) new IntersectionObserver(function (en) { if (!en[0].isIntersecting && !v.paused && !v.ended) v.pause(); }, { threshold: 0.05 }).observe(sec);
+  })();
 })();
 </script>
 </body>
